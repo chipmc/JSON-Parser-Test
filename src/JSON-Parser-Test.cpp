@@ -302,7 +302,7 @@ void printTokens(JsonParser &jp, bool verbose) {
 		}
 	}
 
-	Log.info("Total tokens=%d (%4.2f%% full) storage=%d (%4.2f%% full)", tokenCount, (100*((float)tokenCount/(float)jp.getMaxTokens())), storageSize, (100*((float)storageSize/(float)jp.getBufferLen())));
+	Log.info("Total tokens=%d (%4.2f%% full) storage=%d (%4.2f%% full)", tokenCount, (100*((float)tokenCount+2/(float)jp.getMaxTokens())), storageSize, (100*((float)storageSize/(float)jp.getBufferLen())));
 }
 
 void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok) {
