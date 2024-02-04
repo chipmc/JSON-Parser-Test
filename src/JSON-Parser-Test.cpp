@@ -1,171 +1,163 @@
 #include "Particle.h"
+#include "MyPersistentData.h"
 #include "JsonParserGeneratorRK.h"
+
 
 SerialLogHandler LogHandler;
 
-bool runTest();
-byte findNodeNumber(const char* deviceID);
+byte findNodeNumber(uint32_t uniqueID);
 void printNodeData();
 bool changetype(int nodeNumber, int Newtype);
 byte getType(int nodeNumber);
-void printTokens(JsonParser &jp);
+void printTokens(JsonParser &jp, bool verbose = false);
 void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok);
 
 // Variables to build structure
-String deviceID_1 = "e00fce6894585f1e783cd368";
+uint32_t uniqueID_1 = 2613470560;
 int sensorType_1 = 3;
 
 SYSTEM_MODE(MANUAL);
 
-JsonParserStatic<1024, 50> jp;
+JsonParserStatic<3072, 550> jp;
 String s;
 
-const char * const data = "{\"nodes\":[{\"node\":1,\"dID\":\"aaaaaaaaaaaaaaaaaaaaa1\",\"last\":1667835489,\"type\":1}]}";   // Start with an empty JSON object
+/* NodeID JSON structure
+{nodes:[
+	{
+		{node:(int)nodeNumber},
+		{uID: (uint32_t)uniqueID},
+		{type: (int)sensorType},
+		{p: (int)compressedPayload},
+		{pend: (int)pendingAlerts},
+		{cont: (int)pendingAlertContext}
+	},
+	....]
+}
+*/
+
+
+/*
+Sample Data Set - 
+Raquetball 1 : 2613470559 ["1","false","false"]
+Raquetball 2 : 2121360342 ["2","false","false"]
+
+Spin Studio : 2113381891 ["3","false","false"] 
+
+Gym High : 2222090124 ["4","true","true"]
+Gym Low : 2839639610 ["4","false","true"]
+
+Hallway (to pool): 95839962 ["5","true","true"]
+
+Men's Locker Room Inside : 3818678341 ["6","false","true"]
+Men's Locker Room Outside : 2824039299 ["6","false","true"]
+
+Women's Locker Room Inside : 2561435892 ["7","false","true"]
+Women's Locker Room Outside : 3633933507 ["7","false","true"]
+
+Staircase : 2647744414 ["8","false","true"]
+
+Group Excercise Hallway : 3662503554 ["8","true","true"]
+Group Exercise Corner : 2585746525 ["8","false","true"]
+
+Stretch Area : 660218114 ["9","true","true"]
+
+*/
+
+const char * const data = "{\"nodes\":[\
+	{\"node\":1,\"uID\":2613470559,\"type\":1, \"p\":0, \"pend\":0, \"cont\":1},\
+	{\"node\":2,\"uID\":2121360342,\"type\":1, \"p\":0, \"pend\":0, \"cont\":2},\
+	{\"node\":3,\"uID\":2113381891,\"type\":1, \"p\":0, \"pend\":0, \"cont\":3},\
+	{\"node\":4,\"uID\":2222090124,\"type\":1, \"p\":0, \"pend\":0, \"cont\":4},\
+	{\"node\":5,\"uID\":2839639610,\"type\":1, \"p\":0, \"pend\":0, \"cont\":5},\
+	{\"node\":6,\"uID\":95839962,\"type\":1, \"p\":0, \"pend\":0, \"cont\":6},\
+	{\"node\":7,\"uID\":3818678341,\"type\":1, \"p\":0, \"pend\":0, \"cont\":7},\
+	{\"node\":8,\"uID\":2824039299,\"type\":1, \"p\":0, \"pend\":0, \"cont\":8},\
+	{\"node\":9,\"uID\":2561435892,\"type\":1, \"p\":0, \"pend\":0, \"cont\":9},\
+	{\"node\":10,\"uID\":3633933507,\"type\":1, \"p\":0, \"pend\":0, \"cont\":10},\
+	{\"node\":11,\"uID\":2647744414,\"type\":1, \"p\":0, \"pend\":0, \"cont\":11},\
+	{\"node\":12,\"uID\":3662503554,\"type\":1, \"p\":0, \"pend\":0, \"cont\":12},\
+	{\"node\":13,\"uID\":2585746525,\"type\":1, \"p\":0, \"pend\":0, \"cont\":13},\
+	{\"node\":14,\"uID\":660218114,\"type\":1, \"p\":0, \"pend\":0, \"cont\":14}\
+]}"; 
+
 
 void setup() {
-  delay(2000);                        // Give the serial port time to connect
 
-  Log.info("Starting tests");
+	delay(2000);                        // Give the serial port time to connect
 
-  jp.addString(data);
+	nodeIDData::instance().setup();		// Initialize the nodeDatabase
 
-  jp.parse();
+	Log.info("Starting tests");
 
-  findNodeNumber(deviceID_1);
+	Log.info("First Test, we will clear the Node Database and load the sample data set");
 
-  printTokens(jp);
+	nodeDatabase.resetNodeIDs();	// Clear the Node Database
 
-  /*
+	printTokens(jp, false);
 
-  if (runTest()) Log.info("Passed!");
-  else Log.info("Failed");
+	Log.info("Now that the nodeDatabase is empty, we will load the sample data set");
 
-  char deviceToFind[25] = "aaaaaaaaaaaaaaaaaaaaa1";
-  byte nodeNumber = findNodeNumber(deviceToFind);
-  if (nodeNumber > 0) Log.info("DeviceID found in node %d", nodeNumber );
-  else Log.info("DeviceID not found");
+	jp.addString(data);
 
-  printNodeData();
+	jp.parse();
 
-  char deviceToFind2[25] = "aaaaaaaaaaaaaaaaaaaaa3";
-  byte nodeNumber2 = findNodeNumber(deviceToFind2);
-  if (nodeNumber2 > 0) Log.info("DeviceID found in node %d", nodeNumber2 );
-  else Log.info("DeviceID not found");
+	printTokens(jp, false);
 
-  */
+	Log.info("Next, we will load and store the node database into memory");
 
-  printNodeData();
+	nodeDatabase.set_nodeIDJson(data);				// Load the text object from this sketch into the nodeDatabase
 
-  /*
+	nodeDatabase.flush(false);						// Store the nodeDatabase into memory
 
-  changetype(3,5);
+	Log.info("Note that our JSON object allocation is %4.2f%% of the memory allocated (less than 100%% is OK)", 100*(float)jp.getBufferLen()/(float)nodeDatabase.nodeDataStorageSize());
 
-  printNodeData();
+	jp.clear();										// Clear the JSON object from memory
 
-  Log.info("%s\n", jp.getBuffer());
+	// Here is where we load the JSON object from memory and parse
+	jp.addString(nodeDatabase.get_nodeIDJson());	// Read in the JSON string from memory
+	Log.info("The node string is: %s",nodeDatabase.get_nodeIDJson().c_str());
 
-  char data2[1024];
+	if (jp.parse()) Log.info("Parsed Successfully");
+	else {
+		nodeDatabase.resetNodeIDs();
+		Log.info("Parsing error");
+	}
 
-  strncpy(data2, jp.getBuffer(), jp.getBufferLen());
+	printTokens(jp, false);
 
-  Log.info(data2);
+	Log.info("Finally, we will add a new node to the database and print the database");
 
-  jp.clear();
+	byte nodeNumber = findNodeNumber(uniqueID_1);
 
-  jp.addString(data2); // Load from new string and retest
+	Log.info("The node number is: %d",nodeNumber);
 
-   if (runTest()) Log.info("Passed!");
-  else Log.info("Failed");
+	printTokens(jp, false);
 
-  Log.info("Sensor Type for node 1 is: %d",getType(1));
-  */
+	printNodeData();
 
- Log.info("Finished test");
+	Log.info("Finished test");
 
 }
 
 void loop() {}
 
-bool runTest() {
 
-	bool bResult = jp.parse();
-	assert(bResult);
-
-	const JsonParserGeneratorRK::jsmntok_t *nodesArrayContainer;
-
-	bResult = jp.getValueTokenByKey(jp.getOuterObject(), "nodes", nodesArrayContainer);
-	assert(bResult);
-
-	const JsonParserGeneratorRK::jsmntok_t *nodeObjectContainer;
-
-	nodeObjectContainer = jp.getTokenByIndex(nodesArrayContainer, 0);
-	assert(nodeObjectContainer != NULL);
-
-	int nodeNumber;
-	String deviceID;
-	int lastConnect;
-	int type;
-
-	bResult = jp.getValueByKey(nodeObjectContainer, "node", nodeNumber);
-	assert(bResult);
-	assert(nodeNumber == 1);
-
-	bResult = jp.getValueByKey(nodeObjectContainer, "dID", deviceID);
-	assert(bResult);
-	assert(deviceID == "aaaaaaaaaaaaaaaaaaaaa1");
-
-	bResult = jp.getValueByKey(nodeObjectContainer, "last", lastConnect);
-	assert(bResult);
-	assert(lastConnect == 1668008455);
-
-	bResult = jp.getValueByKey(nodeObjectContainer, "type", type);
-	assert(bResult);
-	assert(type == 1);
-
-	nodeObjectContainer = jp.getTokenByIndex(nodesArrayContainer, 1);
-	assert(nodeObjectContainer != NULL);
-
-	bResult = jp.getValueByKey(nodeObjectContainer, "node", nodeNumber);
-	assert(bResult);
-	assert(nodeNumber == 2);
-
-	bResult = jp.getValueByKey(nodeObjectContainer, "dID", deviceID);
-	assert(bResult);
-	assert(deviceID == "aaaaaaaaaaaaaaaaaaaaa2");
-
-	bResult = jp.getValueByKey(nodeObjectContainer, "last", lastConnect);
-	assert(bResult);
-	assert(lastConnect == 1667836600);
-
-	bResult = jp.getValueByKey(nodeObjectContainer, "type", type);
-	assert(bResult);
-	assert(type == 2);
-
-/*
-	nodeObjectContainer = jp.getTokenByIndex(nodesArrayContainer, 2);
-	assert(nodeObjectContainer == NULL);
-
-	*/
-
-  return true;
-
-}
-
-byte findNodeNumber(const char* deviceID) {
-	String nodeDeviceID;
-	int node;
+byte findNodeNumber(uint32_t uniqueID) {
+	uint32_t nodeUniqueID;
+	int node = 0;
 	int index = 1;				// Start at one since node zero is the gateway
 
 	const JsonParserGeneratorRK::jsmntok_t *nodesArrayContainer;			// Token for the outer array
 	jp.getValueTokenByKey(jp.getOuterObject(), "nodes", nodesArrayContainer);
 	const JsonParserGeneratorRK::jsmntok_t *nodeObjectContainer;			// Token for the objects in the array (I beleive)
 
-	for (int i=0; i<10; i++) {												// Iterate through the array looking for a match
+	for (int i=0; i<50; i++) {												// Iterate through the array looking for a match
 		nodeObjectContainer = jp.getTokenByIndex(nodesArrayContainer, i);
 		if(nodeObjectContainer == NULL) break;								// Ran out of entries - no match found
-		jp.getValueByKey(nodeObjectContainer, "dID", nodeDeviceID);	// Get the deviceID and compare
-		if (nodeDeviceID == deviceID) {
-			jp.getValueByKey(nodeObjectContainer, "nodeNumber", node);// A match!
+		jp.getValueByKey(nodeObjectContainer, "uID", nodeUniqueID);			// Get the uniqueID and compare
+		if (nodeUniqueID == uniqueID) {
+			jp.getValueByKey(nodeObjectContainer, "node", node);		// A match!
+			Log.info("Found the uniqueID, node of %d",node);
 			return node;
 		}
 		index++;															// This will be the node number for the next node if no match is found
@@ -173,41 +165,43 @@ byte findNodeNumber(const char* deviceID) {
 
 	JsonModifier mod(jp);
 
-	Log.info("Did not find the deviceID, new node of %d",index);
+	Log.info("Did not find the uniqueID, new node of %d",index);
 
 	mod.startAppend(jp.getOuterArray());
 		mod.startObject();
 		mod.insertKeyValue("node", (int)index);
-		mod.insertKeyValue("dID", deviceID_1);
-		mod.insertKeyValue("last", Time.now());
+		mod.insertKeyValue("uID", (uint32_t)uniqueID);
 		mod.insertKeyValue("type", (int)sensorType_1);
+		mod.insertKeyValue("p", 0);
+		mod.insertKeyValue("pend", 0);	
+		mod.insertKeyValue("cont", 0);
 		mod.finishObjectOrArray();
 	mod.finish();
 
 	return index;
 }
 
-String findDeviceID(uint8_t node) {
-	String nodeDeviceID;
+uint32_t findUniqueID(uint8_t node) {
+	uint32_t nodeUniqueID;
 
 	const JsonParserGeneratorRK::jsmntok_t *nodesArrayContainer;			// Token for the outer array
 	jp.getValueTokenByKey(jp.getOuterObject(), "nodes", nodesArrayContainer);
 	const JsonParserGeneratorRK::jsmntok_t *nodeObjectContainer;			// Token for the objects in the array (I beleive)
 
 	nodeObjectContainer = jp.getTokenByIndex(nodesArrayContainer, node-1);
-	if(nodeObjectContainer == NULL) return "null";							// Ran out of entries - no match found
-	jp.getValueByKey(nodeObjectContainer, "dID", nodeDeviceID);	// Get the deviceID and compare
-	if (nodeDeviceID == NULL) return "null";
-
-	return nodeDeviceID;
+	if(nodeObjectContainer == NULL) return 0;							// Ran out of entries - no match found
+	if ((jp.getValueByKey(nodeObjectContainer, "uID", nodeUniqueID))) return nodeUniqueID;
+	else return 0;	// Get the deviceID and compare
 }
 
 void printNodeData() {
 
 	int nodeNumber;
-	String nodeDeviceID;
-	int lastConnect;
+	uint32_t nodeUniqueID;
 	int type;
+	int p;
+	int pend;
+	int cont;
 	char data[128];
 
 	Log.info("Node Database currently configured:");
@@ -216,20 +210,21 @@ void printNodeData() {
 	jp.getValueTokenByKey(jp.getOuterObject(), "nodes", nodesArrayContainer);
 	const JsonParserGeneratorRK::jsmntok_t *nodeObjectContainer;			// Token for the objects in the array (I beleive)
 
-	for (int i=0; i<10; i++) {												// Iterate through the array looking for a match
+	for (int i=0; i<50; i++) {												// Iterate through the array looking for a match
 		nodeObjectContainer = jp.getTokenByIndex(nodesArrayContainer, i);
 		if(nodeObjectContainer == NULL) {
 			Log.info("Ran out of entries with i = %d",i);
 			break;								// Ran out of entries
 		}
-		jp.getValueByKey(nodeObjectContainer, "dID", nodeDeviceID);
 		jp.getValueByKey(nodeObjectContainer, "node", nodeNumber);
-		jp.getValueByKey(nodeObjectContainer, "last", lastConnect);
+		jp.getValueByKey(nodeObjectContainer, "uID", nodeUniqueID);
 		jp.getValueByKey(nodeObjectContainer, "type", type);
+		jp.getValueByKey(nodeObjectContainer, "p", p);
+		jp.getValueByKey(nodeObjectContainer, "pend", pend);
+		jp.getValueByKey(nodeObjectContainer, "cont", cont);
 
-		snprintf(data, sizeof(data), "Node %d, deviceID: %s, lastConnected: %s, type %d", nodeNumber, nodeDeviceID.c_str(),Time.timeStr(lastConnect).c_str(), type);
+		snprintf(data, sizeof(data), "Node: %d, uniqueID: %lu, type: %d, p: %d, pend: %d, cont: %d", nodeNumber, nodeUniqueID, type, p, pend, cont);
 		Log.info(data);
-		if (Particle.connected()) Particle.publish("nodeData", data, PRIVATE);
 	}
 
 }
@@ -283,14 +278,31 @@ byte getType(int nodeNumber) {
 }
 
 // Function to dump the token table. Used while debugging the JsonModify code.
-void printTokens(JsonParser &jp) {
-	Log.info("printing tokens");
+void printTokens(JsonParser &jp, bool verbose) {
+	int storageSize = 0;
+	int tokenCount = 0;
+	char tempBuf[1024];
+	if (verbose) Log.info("printing tokens");
 	JsonParserGeneratorRK::jsmntok_t *tokensEnd = jp.getTokensEnd();
 
+	// The first token is the outer object - here we get the total size of the object
+	JsonParserGeneratorRK::jsmntok_t *tok = jp.getTokens();
+	memcpy(tempBuf, jp.getBuffer() + tok->start, tok->end - tok->start);
+	tempBuf[tok->end - tok->start] = 0;
+	storageSize += tok->end;
+	if (verbose) Log.info("Outer object start=%d end=%d tokens=%d - %s", tok->start, tok->end, tok->size, tempBuf);
+
 	for(JsonParserGeneratorRK::jsmntok_t *tok = jp.getTokens(); tok < tokensEnd; tok++) {
-		printToken(jp, tok);
+
+		if (tok->start > 0) {
+			tokenCount += tok->size;
+		}
+		if (verbose) {
+			printToken(jp, tok);
+		}
 	}
 
+	Log.info("Total tokens=%d (%4.2f%% full) storage=%d (%4.2f%% full)", tokenCount, (100*((float)tokenCount/(float)jp.getMaxTokens())), storageSize, (100*((float)storageSize/(float)jp.getBufferLen())));
 }
 
 void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok) {
@@ -304,6 +316,9 @@ void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok) {
 
 	case JsonParserGeneratorRK::JSMN_OBJECT:
 		typeName = "OBJECT";
+		memcpy(tempBuf, jp.getBuffer() + tok->start, tok->end - tok->start);
+		tempBuf[tok->end - tok->start] = 0;
+		Log.info("type=%s start=%d end=%d tokens=%d - %s", typeName, tok->start, tok->end, tok->size, tempBuf);
 		break;
 
 	case JsonParserGeneratorRK::JSMN_ARRAY:
@@ -319,8 +334,5 @@ void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok) {
 		break;
 	}
 
-	memcpy(tempBuf, jp.getBuffer() + tok->start, tok->end - tok->start);
-	tempBuf[tok->end - tok->start] = 0;
-
-	Log.info("type=%s start=%d end=%d size=%d %s\n", typeName, tok->start, tok->end, tok->size, tempBuf);
 }
+
