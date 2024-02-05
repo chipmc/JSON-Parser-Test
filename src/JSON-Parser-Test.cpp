@@ -5,9 +5,12 @@
 
 SerialLogHandler LogHandler;
 
-byte findNodeNumber(uint32_t uniqueID);
-void printNodeData();
-bool changetype(int nodeNumber, int Newtype);
+byte findNodeNumber(uint32_t uniqueID);					// This will create a new node number if the uniqueID is not found
+void printNodeData(bool publish);
+bool parseJoinPayloadValues(uint8_t sensorType, uint8_t compressedJoinPayload, uint8_t& payload1, uint8_t& payload2, uint8_t& payload3, uint8_t& payload4);
+uint8_t compressData(uint8_t data[], uint8_t bitSizes[]);
+void decompressData(uint8_t compressedData, uint8_t data[], uint8_t bitSizes[]);
+bool setType(int nodeNumber, int newType);
 byte getType(int nodeNumber);
 void printTokens(JsonParser &jp, bool verbose = false);
 void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok);
@@ -15,6 +18,8 @@ void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok);
 // Variables to build structure
 uint32_t uniqueID_1 = 2613470560;
 int sensorType_1 = 3;
+int sensorType_2 = 4;
+int sensorType_3 = 10;
 
 SYSTEM_MODE(MANUAL);
 
@@ -133,7 +138,29 @@ void setup() {
 
 	printTokens(jp, false);
 
-	printNodeData();
+	printNodeData(false);
+
+	Log.info("Now we will change the type of the node and print the database");
+
+	nodeNumber = findNodeNumber(uniqueID_1);
+
+	byte currentType = getType(nodeNumber);
+
+	Log.info("The current type for node number %d is: %d",nodeNumber, currentType);
+
+	setType(nodeNumber, sensorType_2);
+
+	currentType = getType(nodeNumber);
+
+	Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
+
+	Log.info("Now we will change the type which will alter its structure and print the database");
+
+	setType(nodeNumber, sensorType_3);
+
+	printTokens(jp, false);
+
+	printNodeData(false);
 
 	Log.info("Finished test");
 
@@ -194,71 +221,92 @@ uint32_t findUniqueID(uint8_t node) {
 	else return 0;	// Get the deviceID and compare
 }
 
-void printNodeData() {
 
-	int nodeNumber;
-	uint32_t nodeUniqueID;
+bool setType(int nodeNumber, int newType) {
+	if (nodeNumber == 0 || nodeNumber == 255) return false;
 	int type;
-	int p;
-	int pend;
-	int cont;
-	char data[128];
-
-	Log.info("Node Database currently configured:");
-
-	const JsonParserGeneratorRK::jsmntok_t *nodesArrayContainer;			// Token for the outer array
-	jp.getValueTokenByKey(jp.getOuterObject(), "nodes", nodesArrayContainer);
-	const JsonParserGeneratorRK::jsmntok_t *nodeObjectContainer;			// Token for the objects in the array (I beleive)
-
-	for (int i=0; i<50; i++) {												// Iterate through the array looking for a match
-		nodeObjectContainer = jp.getTokenByIndex(nodesArrayContainer, i);
-		if(nodeObjectContainer == NULL) {
-			Log.info("Ran out of entries with i = %d",i);
-			break;								// Ran out of entries
-		}
-		jp.getValueByKey(nodeObjectContainer, "node", nodeNumber);
-		jp.getValueByKey(nodeObjectContainer, "uID", nodeUniqueID);
-		jp.getValueByKey(nodeObjectContainer, "type", type);
-		jp.getValueByKey(nodeObjectContainer, "p", p);
-		jp.getValueByKey(nodeObjectContainer, "pend", pend);
-		jp.getValueByKey(nodeObjectContainer, "cont", cont);
-
-		snprintf(data, sizeof(data), "Node: %d, uniqueID: %lu, type: %d, p: %d, pend: %d, cont: %d", nodeNumber, nodeUniqueID, type, p, pend, cont);
-		Log.info(data);
-	}
-
-}
-
-
-bool changetype(int nodeNumber, int Newtype) {
-
-	int type;
+	uint32_t uniqueID;
+	int compressedJoinPayload;
+	int pendingAlert;
+	int pendingAlertContext;
 
 	const JsonParserGeneratorRK::jsmntok_t *nodesArrayContainer;			// Token for the outer array
 	jp.getValueTokenByKey(jp.getOuterObject(), "nodes", nodesArrayContainer);
 	const JsonParserGeneratorRK::jsmntok_t *nodeObjectContainer;			// Token for the objects in the array (I beleive)
 
 	nodeObjectContainer = jp.getTokenByIndex(nodesArrayContainer, nodeNumber-1);
-	if(nodeObjectContainer == NULL) return false;								// Ran out of entries
-
-	jp.getValueByKey(nodeObjectContainer, "type", type);
-
-	Log.info("Changing sensor type from %d to %d", type, Newtype);
-
-	const JsonParserGeneratorRK::jsmntok_t *value;
-
-	jp.getValueTokenByKey(nodeObjectContainer, "type", value);
+	if(nodeObjectContainer == NULL) return false;								// Ran out of entries 
 
 	JsonModifier mod(jp);
 
-	mod.startModify(value);
+	jp.getValueByKey(nodeObjectContainer, "uID", uniqueID);
+	jp.getValueByKey(nodeObjectContainer, "type", type);
+	jp.getValueByKey(nodeObjectContainer, "p", compressedJoinPayload);
+	jp.getValueByKey(nodeObjectContainer, "pend", pendingAlert);
+	jp.getValueByKey(nodeObjectContainer, "cont", pendingAlertContext);
 
-	mod.insertValue((int)Newtype);
-	mod.finish();
+	Log.info("Changing sensor type from %d to %d", type, newType);
+
+	// Remove and Update entry with new type and type specific JSON variables
+	switch (newType) {
+		case 1 ... 9: {    						// Counter
+			mod.removeArrayIndex(nodesArrayContainer, nodeNumber-1);	// remove the JSON as it was
+			mod.startAppend(jp.getOuterArray());						// insert it back, but with the type specific variables for counter
+				mod.startObject();
+					mod.insertKeyValue("node", nodeNumber);
+					mod.insertKeyValue("uID", uniqueID);
+					mod.insertKeyValue("type", newType);					
+					mod.insertKeyValue("p", compressedJoinPayload);
+					mod.insertKeyValue("pend",pendingAlert);
+					mod.insertKeyValue("cont",pendingAlertContext);
+					// Add type specific variables here if needed
+				mod.finishObjectOrArray();
+			mod.finish();
+		} break;
+		case 10 ... 19: {   					// Occupancy
+			Log.info("Removing array index");
+			mod.removeArrayIndex(nodesArrayContainer, nodeNumber-1);	// remove the JSON as it was
+			mod.startAppend(jp.getOuterArray());						// insert it back, but with the type specific variables for counter
+				mod.startObject();
+					mod.insertKeyValue("node", nodeNumber);
+					mod.insertKeyValue("uID", uniqueID);
+					mod.insertKeyValue("type", newType);					
+					mod.insertKeyValue("p", compressedJoinPayload);
+					mod.insertKeyValue("pend",pendingAlert);
+					mod.insertKeyValue("cont",pendingAlertContext);
+					mod.insertKeyValue("occN",(int)0);
+					mod.insertKeyValue("occG",(int)0);
+				mod.finishObjectOrArray();
+			mod.finish();
+			Log.info("append complete");
+
+		} break;
+		case 20 ... 29: {   					// Sensor
+			mod.removeArrayIndex(nodesArrayContainer, nodeNumber-1);	// remove the JSON as it was
+			mod.startAppend(jp.getOuterArray());						// insert it back, but with the type specific variables for counter
+				mod.startObject();
+					mod.insertKeyValue("node", nodeNumber);
+					mod.insertKeyValue("uID", uniqueID);
+					mod.insertKeyValue("type", newType);					
+					mod.insertKeyValue("p", compressedJoinPayload);
+					mod.insertKeyValue("pend",pendingAlert);
+					mod.insertKeyValue("cont",pendingAlertContext);
+					// Add type specific variables here if needed
+				mod.finishObjectOrArray();
+			mod.finish();
+		} break;
+		default: {          		
+			Log.info("Unable to update to new sensorType in setType: %d", newType);
+			if (Particle.connected()) Particle.publish("Alert", "Unable to update to new sensorType in setType", PRIVATE);
+		} break;
+	}
+
+	nodeDatabase.set_nodeIDJson(jp.getBuffer());									// This should backup the nodeID database - now updated to persistent storage
+	nodeDatabase.flush(false);													// Store the nodeDatabase into memory
 
 	return true;
-
 }
+
 
 byte getType(int nodeNumber) {
 
@@ -277,6 +325,67 @@ byte getType(int nodeNumber) {
 
 }
 
+void printNodeData(bool publish) {
+	int nodeNumber;
+	uint32_t uniqueID;
+	int sensorType;
+	uint8_t  payload1;
+	uint8_t  payload2;
+	uint8_t  payload3;
+	uint8_t  payload4;
+	int compressedJoinPayload;
+	int pendingAlertCode;
+	int pendingAlertContext;
+	char data[622];  // max size
+
+	const JsonParserGeneratorRK::jsmntok_t *nodesArrayContainer;			// Token for the outer array
+	jp.getValueTokenByKey(jp.getOuterObject(), "nodes", nodesArrayContainer);
+	const JsonParserGeneratorRK::jsmntok_t *nodeObjectContainer;			// Token for the objects in the array (I beleive)
+
+	for (int i=0; i<100; i++) {												// Iterate through the array looking for a match
+		nodeObjectContainer = jp.getTokenByIndex(nodesArrayContainer, i);
+		if(nodeObjectContainer == NULL) {
+			break;								// Ran out of entries 
+		} 
+		jp.getValueByKey(nodeObjectContainer, "uID", uniqueID);
+		jp.getValueByKey(nodeObjectContainer, "node", nodeNumber);
+		jp.getValueByKey(nodeObjectContainer, "type", sensorType);
+		jp.getValueByKey(nodeObjectContainer, "p", compressedJoinPayload);
+		jp.getValueByKey(nodeObjectContainer, "pend", pendingAlertCode);
+		jp.getValueByKey(nodeObjectContainer, "cont", pendingAlertContext);
+
+		parseJoinPayloadValues(sensorType, compressedJoinPayload, payload1, payload2, payload3, payload4);
+
+		// Type specific JSON variables
+		switch (sensorType) {
+			case 1 ... 9: {    						// Counter
+				snprintf(data, sizeof(data), "Node %d, uniqueID %lu, type %d, payload (%d/%d/%d/%d) with pending alert %d and alert context %d", nodeNumber, uniqueID, sensorType, payload1, payload2, payload3, payload4, pendingAlertCode, pendingAlertContext);
+			} break;
+			case 10 ... 19: {   					// Occupancy
+				int occupancyNet;
+				int occupancyGross;
+				jp.getValueByKey(nodeObjectContainer, "occN", occupancyNet);
+				jp.getValueByKey(nodeObjectContainer, "occG", occupancyGross);
+				snprintf(data, sizeof(data), "Node %d, uniqueID %lu, type %d, occupancyNet %d, occupancyGross %d, payload (%d/%d/%d/%d) with pending alert %d and alert context %d", nodeNumber, uniqueID, sensorType, occupancyNet, occupancyGross, payload1, payload2, payload3, payload4, pendingAlertCode, pendingAlertContext);
+			} break;
+			case 20 ... 29: {   					// Sensor
+				snprintf(data, sizeof(data), "Node %d, uniqueID %lu, type %d, payload (%d/%d/%d/%d) with pending alert %d and alert context %d", nodeNumber, uniqueID, sensorType, payload1, payload2, payload3, payload4, pendingAlertCode, pendingAlertContext);
+			} break;
+			default: {          		
+				Log.info("Unknown sensor type in printNodeData %d", sensorType);
+				if (Particle.connected()) Particle.publish("Alert", "Unknown sensor type in printNodeData", PRIVATE);
+			} break;
+    	}
+
+		Log.info(data);
+		if (Particle.connected() && publish) {
+			Particle.publish("nodeData", data, PRIVATE);
+			delay(1000);
+		}
+	}
+	Log.info(nodeDatabase.get_nodeIDJson());  // See the raw JSON string
+}
+
 // Function to dump the token table. Used while debugging the JsonModify code.
 void printTokens(JsonParser &jp, bool verbose) {
 	int storageSize = 0;
@@ -292,6 +401,10 @@ void printTokens(JsonParser &jp, bool verbose) {
 	storageSize += tok->end;
 	if (verbose) Log.info("Outer object start=%d end=%d tokens=%d - %s", tok->start, tok->end, tok->size, tempBuf);
 
+	const char *charlike = "test";
+	sniprintf(tempBuf, sizeof(tempBuf), "test %s", charlike);
+	Particle.publish("Test",tempBuf, PRIVATE);
+
 	for(JsonParserGeneratorRK::jsmntok_t *tok = jp.getTokens(); tok < tokensEnd; tok++) {
 
 		if (tok->start > 0) {
@@ -302,7 +415,7 @@ void printTokens(JsonParser &jp, bool verbose) {
 		}
 	}
 
-	Log.info("Total tokens=%d (%4.2f%% full) storage=%d (%4.2f%% full)", tokenCount, (100*((float)tokenCount+2/(float)jp.getMaxTokens())), storageSize, (100*((float)storageSize/(float)jp.getBufferLen())));
+	Log.info("Total tokens=%d (%4.2f%% full) storage=%d (%4.2f%% full)", tokenCount, (100*((float)tokenCount/(float)jp.getMaxTokens())), storageSize, (100*((float)storageSize/(float)jp.getBufferLen())));
 }
 
 void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok) {
@@ -334,5 +447,58 @@ void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok) {
 		break;
 	}
 
+}
+
+bool parseJoinPayloadValues(uint8_t sensorType, uint8_t compressedJoinPayload, uint8_t& payload1, uint8_t& payload2, uint8_t& payload3, uint8_t& payload4) {
+    uint8_t data[4] = {0};
+    uint8_t bitSizes[4] = {0};
+
+    switch (sensorType) {
+        case 1 ... 9: {    						// Counter
+            bitSizes[0] = 1; // 2-Way (1 bit)
+        } break;
+        case 10 ... 19: {   					// Occupancy
+            bitSizes[0] = 6; // space (6 bits)
+            bitSizes[1] = 1; // placement (1 bit)
+            bitSizes[2] = 1; // multi (1 bit)
+        } break;
+        case 20 ... 29: {   					// Sensor
+            bitSizes[0] = 6; // space (6 bits)
+            bitSizes[1] = 1; // placement (1 bit)
+        } break;
+        default: {
+            Log.info("Unknown sensor type in parseJoinPayloadValues %d", sensorType);
+            if (Particle.connected()) Particle.publish("Alert", "Unknown sensor type in parseJoinPayloadValues", PRIVATE);
+            return false;
+        } break;
+    }
+
+    decompressData(compressedJoinPayload, data, bitSizes);
+
+    payload1 = data[0];
+    payload2 = data[1];
+    payload3 = data[2];
+    payload4 = data[3];
+
+    return true;
+}
+
+uint8_t compressData(uint8_t data[], uint8_t bitSizes[]) {
+    uint8_t compressedData = 0;
+    uint8_t bitOffset = 0;
+    for (uint8_t i = 0; i < 4; ++i) {
+        data[i] = (data[i] < (1 << bitSizes[i])) ? data[i] : ((1 << bitSizes[i]) - 1);
+        compressedData |= (data[i] * (1 << bitOffset));
+        bitOffset += bitSizes[i];
+    }
+    return compressedData;
+}
+
+void decompressData(uint8_t compressedData, uint8_t data[], uint8_t bitSizes[]) {
+    uint8_t bitOffset = 0;
+    for (uint8_t i = 0; i < 4; ++i) {
+        data[i] = (compressedData >> bitOffset) & ((1 << bitSizes[i]) - 1);
+        bitOffset += bitSizes[i];
+    }
 }
 
