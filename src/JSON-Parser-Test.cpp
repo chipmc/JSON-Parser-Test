@@ -3,6 +3,12 @@
 #include "JsonParserGeneratorRK.h"
 
 
+// **************************  Started implemening the fix in this code **************************
+// **************************  Started implemening the fix in this code **************************
+// **************************  Started implemening the fix in this code **************************
+
+
+
 SerialLogHandler LogHandler;
 
 byte findNodeNumber(uint32_t uniqueID);					// This will create a new node number if the uniqueID is not found
@@ -34,6 +40,8 @@ String s;
 		{uID: (uint32_t)uniqueID},
 		{type: (int)sensorType},
 		{p: (int)compressedPayload},
+		{p1: (int)payload1},						//  Added two additional payload fields - for Sensor type 10-19
+		{p2: (int)payload2},
 		{pend: (int)pendingAlerts},
 		{cont: (int)pendingAlertContext}
 	},
@@ -70,20 +78,20 @@ Stretch Area : 660218114 ["9","true","true"]
 */
 
 const char * const data = "{\"nodes\":[\
-	{\"node\":1,\"uID\":2613470559,\"type\":1, \"p\":0, \"pend\":0, \"cont\":1},\
-	{\"node\":2,\"uID\":2121360342,\"type\":1, \"p\":0, \"pend\":0, \"cont\":2},\
-	{\"node\":3,\"uID\":2113381891,\"type\":1, \"p\":0, \"pend\":0, \"cont\":3},\
-	{\"node\":4,\"uID\":2222090124,\"type\":1, \"p\":0, \"pend\":0, \"cont\":4},\
-	{\"node\":5,\"uID\":2839639610,\"type\":1, \"p\":0, \"pend\":0, \"cont\":5},\
-	{\"node\":6,\"uID\":95839962,\"type\":1, \"p\":0, \"pend\":0, \"cont\":6},\
-	{\"node\":7,\"uID\":3818678341,\"type\":1, \"p\":0, \"pend\":0, \"cont\":7},\
-	{\"node\":8,\"uID\":2824039299,\"type\":1, \"p\":0, \"pend\":0, \"cont\":8},\
-	{\"node\":9,\"uID\":2561435892,\"type\":1, \"p\":0, \"pend\":0, \"cont\":9},\
-	{\"node\":10,\"uID\":3633933507,\"type\":1, \"p\":0, \"pend\":0, \"cont\":10},\
-	{\"node\":11,\"uID\":2647744414,\"type\":1, \"p\":0, \"pend\":0, \"cont\":11},\
-	{\"node\":12,\"uID\":3662503554,\"type\":1, \"p\":0, \"pend\":0, \"cont\":12},\
-	{\"node\":13,\"uID\":2585746525,\"type\":1, \"p\":0, \"pend\":0, \"cont\":13},\
-	{\"node\":14,\"uID\":660218114,\"type\":1, \"p\":0, \"pend\":0, \"cont\":14}\
+	{\"node\":1,\"uID\":2613470559,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":1},\
+	{\"node\":2,\"uID\":2121360342,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":2},\
+	{\"node\":3,\"uID\":2113381891,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":3},\
+	{\"node\":4,\"uID\":2222090124,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":4},\
+	{\"node\":5,\"uID\":2839639610,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":5},\
+	{\"node\":6,\"uID\":95839962,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":6},\
+	{\"node\":7,\"uID\":3818678341,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":7},\
+	{\"node\":8,\"uID\":2824039299,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":8},\
+	{\"node\":9,\"uID\":2561435892,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":9},\
+	{\"node\":10,\"uID\":3633933507,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":10},\
+	{\"node\":11,\"uID\":2647744414,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":11},\
+	{\"node\":12,\"uID\":3662503554,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":12},\
+	{\"node\":13,\"uID\":2585746525,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":13},\
+	{\"node\":14,\"uID\":660218114,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":14}\
 ]}"; 
 
 
@@ -227,6 +235,8 @@ byte findNodeNumber(uint32_t uniqueID) {
 		mod.insertKeyValue("uID", (uint32_t)uniqueID);
 		mod.insertKeyValue("type", (int)sensorType_1);
 		mod.insertKeyValue("p", 0);
+		mod.insertKeyValue("p1", 0);
+		mod.insertKeyValue("p2", 0);
 		mod.insertKeyValue("pend", 0);	
 		mod.insertKeyValue("cont", 0);
 		mod.finishObjectOrArray();
@@ -247,6 +257,47 @@ uint32_t findUniqueID(uint8_t node) {
 	if ((jp.getValueByKey(nodeObjectContainer, "uID", nodeUniqueID))) return nodeUniqueID;
 	else return 0;	// Get the deviceID and compare
 }
+
+// **********************  The set Type function could be made as simple as this **********************
+// **********************  The set Type function could be made as simple as this **********************
+// **********************  The set Type function could be made as simple as this **********************
+
+
+bool changetype(int nodeNumber, int Newtype) {
+
+	int type;
+
+	const JsonParserGeneratorRK::jsmntok_t *nodesArrayContainer;			// Token for the outer array
+	jp.getValueTokenByKey(jp.getOuterObject(), "nodes", nodesArrayContainer);
+	const JsonParserGeneratorRK::jsmntok_t *nodeObjectContainer;			// Token for the objects in the array (I beleive)
+
+	nodeObjectContainer = jp.getTokenByIndex(nodesArrayContainer, nodeNumber-1);
+	if(nodeObjectContainer == NULL) return false;								// Ran out of entries
+
+	jp.getValueByKey(nodeObjectContainer, "type", type);
+
+	Log.info("Changing sensor type from %d to %d", type, Newtype);
+
+	const JsonParserGeneratorRK::jsmntok_t *value;
+
+	jp.getValueTokenByKey(nodeObjectContainer, "type", value);
+
+	JsonModifier mod(jp);
+
+	mod.startModify(value);
+
+	mod.insertValue((int)Newtype);
+	mod.finish();
+
+	return true;
+
+}
+
+// **********************  The set Type function could be made as simple as changeType above **********************
+// Once we same the type, then the p1 and p2 values could store gross and net but, no change to the JSON structure is needed
+// Would need to create a function to setCounts which would just go in and update the values of p1 / p2 for the node
+// ****************************************************************************************************************
+
 
 
 bool setType(int nodeNumber, int newType) {
@@ -275,6 +326,12 @@ bool setType(int nodeNumber, int newType) {
 	Log.info("Changing sensor type from %d to %d", type, newType);
 
 	// Remove and Update entry with new type and type specific JSON variables
+
+
+	//  ***************************  This could likely be simplified ***************************
+	//  ***************************  This could likely be simplified ***************************
+	//  ***************************  This could likely be simplified ***************************
+
 	switch (newType) {
 		case 1 ... 9: {    						// Counter
 			mod.removeArrayIndex(nodesArrayContainer, nodeNumber-1);	// remove the JSON as it was
@@ -284,6 +341,8 @@ bool setType(int nodeNumber, int newType) {
 					mod.insertKeyValue("uID", uniqueID);
 					mod.insertKeyValue("type", newType);					
 					mod.insertKeyValue("p", compressedJoinPayload);
+					mod.insertKeyValue("p1", 0);
+					mod.insertKeyValue("p2", 0);					
 					mod.insertKeyValue("pend",pendingAlert);
 					mod.insertKeyValue("cont",pendingAlertContext);
 					// Add type specific variables here if needed
@@ -299,10 +358,10 @@ bool setType(int nodeNumber, int newType) {
 					mod.insertKeyValue("uID", uniqueID);
 					mod.insertKeyValue("type", newType);					
 					mod.insertKeyValue("p", compressedJoinPayload);
+					mod.insertKeyValue("p1", 0);
+					mod.insertKeyValue("p2", 0);		
 					mod.insertKeyValue("pend",pendingAlert);
 					mod.insertKeyValue("cont",pendingAlertContext);
-					mod.insertKeyValue("occN",(int)0);
-					mod.insertKeyValue("occG",(int)0);
 				mod.finishObjectOrArray();
 			mod.finish();
 			Log.info("append complete");
@@ -316,6 +375,8 @@ bool setType(int nodeNumber, int newType) {
 					mod.insertKeyValue("uID", uniqueID);
 					mod.insertKeyValue("type", newType);					
 					mod.insertKeyValue("p", compressedJoinPayload);
+					mod.insertKeyValue("p1", 0);
+					mod.insertKeyValue("p2", 0);		
 					mod.insertKeyValue("pend",pendingAlert);
 					mod.insertKeyValue("cont",pendingAlertContext);
 					// Add type specific variables here if needed
@@ -361,6 +422,8 @@ void printNodeData(bool publish) {
 	uint8_t  payload3;
 	uint8_t  payload4;
 	int compressedJoinPayload;
+	int uncompressedJoinPayload1;
+	int uncompressedJoinPayload2;	
 	int pendingAlertCode;
 	int pendingAlertContext;
 	char data[622];  // max size
@@ -378,10 +441,17 @@ void printNodeData(bool publish) {
 		jp.getValueByKey(nodeObjectContainer, "node", nodeNumber);
 		jp.getValueByKey(nodeObjectContainer, "type", sensorType);
 		jp.getValueByKey(nodeObjectContainer, "p", compressedJoinPayload);
+		jp.getValueByKey(nodeObjectContainer, "p1", uncompressedJoinPayload1);
+		jp.getValueByKey(nodeObjectContainer, "p2", uncompressedJoinPayload2);
 		jp.getValueByKey(nodeObjectContainer, "pend", pendingAlertCode);
 		jp.getValueByKey(nodeObjectContainer, "cont", pendingAlertContext);
 
 		parseJoinPayloadValues(sensorType, compressedJoinPayload, payload1, payload2, payload3, payload4);
+
+
+	//  ***************************  This could likely be simplified ***************************
+	//  ***************************  This could likely be simplified ***************************
+	//  ***************************  This could likely be simplified ***************************
 
 		// Type specific JSON variables
 		switch (sensorType) {
@@ -391,8 +461,8 @@ void printNodeData(bool publish) {
 			case 10 ... 19: {   					// Occupancy
 				int occupancyNet;
 				int occupancyGross;
-				jp.getValueByKey(nodeObjectContainer, "occN", occupancyNet);
-				jp.getValueByKey(nodeObjectContainer, "occG", occupancyGross);
+				jp.getValueByKey(nodeObjectContainer, "p1", occupancyNet);
+				jp.getValueByKey(nodeObjectContainer, "p2", occupancyGross);
 				snprintf(data, sizeof(data), "Node %d, uniqueID %lu, type %d, occupancyNet %d, occupancyGross %d, payload (%d/%d/%d/%d) with pending alert %d and alert context %d", nodeNumber, uniqueID, sensorType, occupancyNet, occupancyGross, payload1, payload2, payload3, payload4, pendingAlertCode, pendingAlertContext);
 			} break;
 			case 20 ... 29: {   					// Sensor
