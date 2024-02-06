@@ -17,6 +17,7 @@ void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok);
 
 // Variables to build structure
 uint32_t uniqueID_1 = 2613470560;
+uint32_t uniqueID_2 = 2121360342;
 int sensorType_1 = 3;
 int sensorType_2 = 4;
 int sensorType_3 = 10;
@@ -161,6 +162,32 @@ void setup() {
 	printTokens(jp, false);
 
 	printNodeData(false);
+
+	Log.info("Now we will change the type on a note that is in the middle of the pack and then change it back. ");
+
+	nodeNumber = findNodeNumber(uniqueID_2);
+
+	currentType = getType(nodeNumber);
+
+	Log.info("The current type for node number %d is: %d",nodeNumber, currentType);
+
+	setType(nodeNumber, sensorType_2);
+
+	printNodeData(false);
+
+	currentType = getType(nodeNumber);
+
+	Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
+
+	setType(nodeNumber, sensorType_3);
+
+	currentType = getType(nodeNumber);
+
+	Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
+
+	printTokens(jp, false);
+
+	Log.info("Notice how the new node is now at the end of the outer ojbect - this will break our code");
 
 	Log.info("Finished test");
 
