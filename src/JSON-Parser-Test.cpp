@@ -122,87 +122,87 @@ void setup() {
 
 	printTokens(jp, true);
 
-	// Log.info("Next, we will load and store the node database into memory");
+	Log.info("Next, we will load and store the node database into memory");
 
-	// nodeDatabase.set_nodeIDJson(data);				// Load the text object from this sketch into the nodeDatabase
+	nodeDatabase.set_nodeIDJson(data);				// Load the text object from this sketch into the nodeDatabase
 
-	// nodeDatabase.flush(false);						// Store the nodeDatabase into memory
+	nodeDatabase.flush(false);						// Store the nodeDatabase into memory
 
-	// Log.info("Note that our JSON object allocation is %4.2f%% of the memory allocated (less than 100%% is OK)", 100*(float)jp.getBufferLen()/(float)nodeDatabase.nodeDataStorageSize());
+	Log.info("Note that our JSON object allocation is %4.2f%% of the memory allocated (less than 100%% is OK)", 100*(float)jp.getBufferLen()/(float)nodeDatabase.nodeDataStorageSize());
 
-	// jp.clear();										// Clear the JSON object from memory
+	jp.clear();										// Clear the JSON object from memory
 
-	// // Here is where we load the JSON object from memory and parse
-	// jp.addString(nodeDatabase.get_nodeIDJson());	// Read in the JSON string from memory
-	// Log.info("The node string is: %s",nodeDatabase.get_nodeIDJson().c_str());
+	// Here is where we load the JSON object from memory and parse
+	jp.addString(nodeDatabase.get_nodeIDJson());	// Read in the JSON string from memory
+	Log.info("The node string is: %s",nodeDatabase.get_nodeIDJson().c_str());
 
-	// if (jp.parse()) Log.info("Parsed Successfully");
-	// else {
-	// 	nodeDatabase.resetNodeIDs();
-	// 	Log.info("Parsing error");
-	// }
+	if (jp.parse()) Log.info("Parsed Successfully");
+	else {
+		nodeDatabase.resetNodeIDs();
+		Log.info("Parsing error");
+	}
 
-	// printTokens(jp, false);
+	printTokens(jp, false);
 
-	// Log.info("Finally, we will add a new node to the database and print the database");
+	Log.info("Finally, we will add a new node to the database and print the database");
 
-	// byte nodeNumber = findNodeNumber(uniqueID_1);
+	byte nodeNumber = findNodeNumber(uniqueID_1);
 
-	// Log.info("The node number is: %d",nodeNumber);
+	Log.info("The node number is: %d",nodeNumber);
 
-	// printTokens(jp, false);
+	printTokens(jp, false);
 
-	// printNodeData(false);
+	printNodeData(false);
 
-	// Log.info("Now we will change the type of the node and print the database");
+	Log.info("Now we will change the type of the node and print the database");
 
-	// nodeNumber = findNodeNumber(uniqueID_1);
+	nodeNumber = findNodeNumber(uniqueID_1);
 
-	// byte currentType = getType(nodeNumber);
+	byte currentType = getType(nodeNumber);
 
-	// Log.info("The current type for node number %d is: %d",nodeNumber, currentType);
+	Log.info("The current type for node number %d is: %d",nodeNumber, currentType);
 
-	// setType(nodeNumber, sensorType_2);
+	setType(nodeNumber, sensorType_2);
 
-	// currentType = getType(nodeNumber);
+	currentType = getType(nodeNumber);
 
-	// Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
+	Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
 
-	// Log.info("Now we will change the type which will alter its structure and print the database");
+	Log.info("Now we will change the type which will alter its structure and print the database");
 
-	// setType(nodeNumber, sensorType_3);
+	setType(nodeNumber, sensorType_3);
 
-	// printTokens(jp, false);
+	printTokens(jp, false);
 
-	// printNodeData(false);
+	printNodeData(false);
 
-	// Log.info("Now we will change the type on a note that is in the middle of the pack and then change it back. ");
+	Log.info("Now we will change the type on a note that is in the middle of the pack and then change it back. ");
 
-	// nodeNumber = findNodeNumber(uniqueID_2);
+	nodeNumber = findNodeNumber(uniqueID_2);
 
-	// currentType = getType(nodeNumber);
+	currentType = getType(nodeNumber);
 
-	// Log.info("The current type for node number %d is: %d",nodeNumber, currentType);
+	Log.info("The current type for node number %d is: %d",nodeNumber, currentType);
 
-	// setType(nodeNumber, sensorType_2);
+	setType(nodeNumber, sensorType_2);
 
-	// printNodeData(false);
+	printNodeData(false);
 
-	// currentType = getType(nodeNumber);
+	currentType = getType(nodeNumber);
 
-	// Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
+	Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
 
-	// setType(nodeNumber, sensorType_3);
+	setType(nodeNumber, sensorType_3);
 
-	// currentType = getType(nodeNumber);
+	currentType = getType(nodeNumber);
 
-	// Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
+	Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
 
-	// printTokens(jp, false);
+	printTokens(jp, false);
 
-	// Log.info("Notice how the new node is now at the end of the outer ojbect - this will break our code");
+	Log.info("Notice how the new node is now at the end of the outer ojbect - this will break our code");
 
-	// Log.info("Finished Parsing Test. Running data report tests in a loop.");
+	Log.info("Finished Parsing Test. Running data report tests in a loop.");
 
 }
 
