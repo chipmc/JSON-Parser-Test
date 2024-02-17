@@ -1,13 +1,13 @@
 #include "Particle.h"
 #include "MyPersistentData.h"
+#include "DataReport.h"
+#include "Gateway.h"
 #include "JsonParserGeneratorRK.h"
-
+#include <cstdlib> // For rand() and srand()
 
 // **************************  Started implemening the fix in this code **************************
 // **************************  Started implemening the fix in this code **************************
 // **************************  Started implemening the fix in this code **************************
-
-
 
 SerialLogHandler LogHandler;
 
@@ -20,6 +20,8 @@ bool setType(int nodeNumber, int newType);
 byte getType(int nodeNumber);
 void printTokens(JsonParser &jp, bool verbose = false);
 void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok);
+bool setJsonData1(int nodeNumber, int sensorType, int newJsonData1);
+bool setJsonData2(int nodeNumber, int sensorType, int newJsonData2);
 
 // Variables to build structure
 uint32_t uniqueID_1 = 2613470560;
@@ -60,7 +62,7 @@ Spin Studio : 2113381891 ["3","false","false"]
 Gym High : 2222090124 ["4","true","true"]
 Gym Low : 2839639610 ["4","false","true"]
 
-Hallway (to pool): 95839962 ["5","true","true"]
+Hallway (to pool): 95839962 ["5","true","false"]
 
 Men's Locker Room Inside : 3818678341 ["6","false","true"]
 Men's Locker Room Outside : 2824039299 ["6","false","true"]
@@ -77,23 +79,26 @@ Stretch Area : 660218114 ["9","true","true"]
 
 */
 
-const char * const data = "{\"nodes\":[\
-	{\"node\":1,\"uID\":2613470559,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":1},\
-	{\"node\":2,\"uID\":2121360342,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":2},\
-	{\"node\":3,\"uID\":2113381891,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":3},\
-	{\"node\":4,\"uID\":2222090124,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":4},\
-	{\"node\":5,\"uID\":2839639610,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":5},\
-	{\"node\":6,\"uID\":95839962,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":6},\
-	{\"node\":7,\"uID\":3818678341,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":7},\
-	{\"node\":8,\"uID\":2824039299,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":8},\
-	{\"node\":9,\"uID\":2561435892,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":9},\
-	{\"node\":10,\"uID\":3633933507,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":10},\
-	{\"node\":11,\"uID\":2647744414,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":11},\
-	{\"node\":12,\"uID\":3662503554,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":12},\
-	{\"node\":13,\"uID\":2585746525,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":13},\
-	{\"node\":14,\"uID\":660218114,\"type\":1, \"p\":0, \"p1\":0, \"p2\":0, \"pend\":0, \"cont\":14}\
-]}"; 
+const char * const data = "{\"nodes\":[{\"node\":1,\"uID\":2613470559,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":1},{\"node\":2,\"uID\":2121360342,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":2},{\"node\":3,\"uID\":2113381891,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":3},{\"node\":4,\"uID\":2222090124,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":4},{\"node\":5,\"uID\":2839639610,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":5},{\"node\":6,\"uID\":95839962,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":6},{\"node\":7,\"uID\":3818678341,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":7},{\"node\":8,\"uID\":2824039299,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":8},{\"node\":9,\"uID\":2561435892,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":9},{\"node\":10,\"uID\":3633933507,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":10},{\"node\":11,\"uID\":2647744414,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":11},{\"node\":12,\"uID\":3662503554,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":12},{\"node\":13,\"uID\":2585746525,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":13},{\"node\":14,\"uID\":660218114,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":14}]}"; 
 
+// Array to store the unique IDs. We will loop through these in our data report test.
+const uint32_t uniqueIDs[] = {
+    2613470559,
+    2121360342,
+    2113381891,
+    2222090124,
+    2839639610,
+    95839962,
+    3818678341,
+    2824039299,
+    2561435892,
+    3633933507,
+    2647744414,
+    3662503554,
+    2585746525,
+    660218114
+};
+const size_t uniqueIDsCount = sizeof(uniqueIDs) / sizeof(uniqueIDs[0]); // calculate the size for the loop boundary
 
 void setup() {
 
@@ -110,99 +115,130 @@ void setup() {
 	printTokens(jp, false);
 
 	Log.info("Now that the nodeDatabase is empty, we will load the sample data set");
-
+	
 	jp.addString(data);
 
 	jp.parse();
 
-	printTokens(jp, false);
+	printTokens(jp, true);
 
-	Log.info("Next, we will load and store the node database into memory");
+	// Log.info("Next, we will load and store the node database into memory");
 
-	nodeDatabase.set_nodeIDJson(data);				// Load the text object from this sketch into the nodeDatabase
+	// nodeDatabase.set_nodeIDJson(data);				// Load the text object from this sketch into the nodeDatabase
 
-	nodeDatabase.flush(false);						// Store the nodeDatabase into memory
+	// nodeDatabase.flush(false);						// Store the nodeDatabase into memory
 
-	Log.info("Note that our JSON object allocation is %4.2f%% of the memory allocated (less than 100%% is OK)", 100*(float)jp.getBufferLen()/(float)nodeDatabase.nodeDataStorageSize());
+	// Log.info("Note that our JSON object allocation is %4.2f%% of the memory allocated (less than 100%% is OK)", 100*(float)jp.getBufferLen()/(float)nodeDatabase.nodeDataStorageSize());
 
-	jp.clear();										// Clear the JSON object from memory
+	// jp.clear();										// Clear the JSON object from memory
 
-	// Here is where we load the JSON object from memory and parse
-	jp.addString(nodeDatabase.get_nodeIDJson());	// Read in the JSON string from memory
-	Log.info("The node string is: %s",nodeDatabase.get_nodeIDJson().c_str());
+	// // Here is where we load the JSON object from memory and parse
+	// jp.addString(nodeDatabase.get_nodeIDJson());	// Read in the JSON string from memory
+	// Log.info("The node string is: %s",nodeDatabase.get_nodeIDJson().c_str());
 
-	if (jp.parse()) Log.info("Parsed Successfully");
-	else {
-		nodeDatabase.resetNodeIDs();
-		Log.info("Parsing error");
-	}
+	// if (jp.parse()) Log.info("Parsed Successfully");
+	// else {
+	// 	nodeDatabase.resetNodeIDs();
+	// 	Log.info("Parsing error");
+	// }
 
-	printTokens(jp, false);
+	// printTokens(jp, false);
 
-	Log.info("Finally, we will add a new node to the database and print the database");
+	// Log.info("Finally, we will add a new node to the database and print the database");
 
-	byte nodeNumber = findNodeNumber(uniqueID_1);
+	// byte nodeNumber = findNodeNumber(uniqueID_1);
 
-	Log.info("The node number is: %d",nodeNumber);
+	// Log.info("The node number is: %d",nodeNumber);
 
-	printTokens(jp, false);
+	// printTokens(jp, false);
 
-	printNodeData(false);
+	// printNodeData(false);
 
-	Log.info("Now we will change the type of the node and print the database");
+	// Log.info("Now we will change the type of the node and print the database");
 
-	nodeNumber = findNodeNumber(uniqueID_1);
+	// nodeNumber = findNodeNumber(uniqueID_1);
 
-	byte currentType = getType(nodeNumber);
+	// byte currentType = getType(nodeNumber);
 
-	Log.info("The current type for node number %d is: %d",nodeNumber, currentType);
+	// Log.info("The current type for node number %d is: %d",nodeNumber, currentType);
 
-	setType(nodeNumber, sensorType_2);
+	// setType(nodeNumber, sensorType_2);
 
-	currentType = getType(nodeNumber);
+	// currentType = getType(nodeNumber);
 
-	Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
+	// Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
 
-	Log.info("Now we will change the type which will alter its structure and print the database");
+	// Log.info("Now we will change the type which will alter its structure and print the database");
 
-	setType(nodeNumber, sensorType_3);
+	// setType(nodeNumber, sensorType_3);
 
-	printTokens(jp, false);
+	// printTokens(jp, false);
 
-	printNodeData(false);
+	// printNodeData(false);
 
-	Log.info("Now we will change the type on a note that is in the middle of the pack and then change it back. ");
+	// Log.info("Now we will change the type on a note that is in the middle of the pack and then change it back. ");
 
-	nodeNumber = findNodeNumber(uniqueID_2);
+	// nodeNumber = findNodeNumber(uniqueID_2);
 
-	currentType = getType(nodeNumber);
+	// currentType = getType(nodeNumber);
 
-	Log.info("The current type for node number %d is: %d",nodeNumber, currentType);
+	// Log.info("The current type for node number %d is: %d",nodeNumber, currentType);
 
-	setType(nodeNumber, sensorType_2);
+	// setType(nodeNumber, sensorType_2);
 
-	printNodeData(false);
+	// printNodeData(false);
 
-	currentType = getType(nodeNumber);
+	// currentType = getType(nodeNumber);
 
-	Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
+	// Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
 
-	setType(nodeNumber, sensorType_3);
+	// setType(nodeNumber, sensorType_3);
 
-	currentType = getType(nodeNumber);
+	// currentType = getType(nodeNumber);
 
-	Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
+	// Log.info("The new type for node number %d is: %d",nodeNumber, currentType);
 
-	printTokens(jp, false);
+	// printTokens(jp, false);
 
-	Log.info("Notice how the new node is now at the end of the outer ojbect - this will break our code");
+	// Log.info("Notice how the new node is now at the end of the outer ojbect - this will break our code");
 
-	Log.info("Finished test");
+	// Log.info("Finished Parsing Test. Running data report tests in a loop.");
 
 }
 
-void loop() {}
+void loop() {
+	delay(2000);
+    static int numLoops = 0;
 
+    int currentIndex = numLoops % uniqueIDsCount;
+
+    // Get the current time using Particle's Time.now()
+    unsigned long currentTime = Time.now();
+    // Seed a random number generator with the current time
+    std::srand(currentTime);
+
+    // Initialize a new DataReport object with the next uniqueID in the list
+    DataReport report = DataReport(uniqueIDs[currentIndex]); 
+    report.setNodeNumber(currentIndex + 1); // The nodeNumber is equal to the index + 1 for all uniqueIDs
+    report.setSensorType(10); // sensorType is 10 for occupancy nodes
+    report.setOccupancyNet(std::rand() % 1001); // The data report will have a random value for occupancyNet
+    report.setOccupancyGross(std::rand() % 1001); // The data report will have a random value for occupancyGross
+    // Set other parameters here if you wish to test them ...
+
+    Gateway::instance().processDataReport(report); // Send the data report to the gateway to populate MyPersistentData
+
+    // Update the JSON database with the data that is set after the report.
+    bool result1 = setJsonData1(current.get_nodeNumber(), current.get_sensorType(), current.get_payload3() <<8 | current.get_payload4());
+    bool result2 = setJsonData2(current.get_nodeNumber(), current.get_sensorType(), current.get_payload1() <<8 | current.get_payload2());
+
+    if(!(result1 && result2)){
+        Log.info("Failed to set Json Data!! Tokens:");
+    }
+
+	printTokens(jp, true);
+   
+    numLoops += 1;
+}
 
 byte findNodeNumber(uint32_t uniqueID) {
 	uint32_t nodeUniqueID;
@@ -599,3 +635,65 @@ void decompressData(uint8_t compressedData, uint8_t data[], uint8_t bitSizes[]) 
     }
 }
 
+bool setJsonData1(int nodeNumber, int sensorType, int newJsonData1) {
+	if (nodeNumber == 0 || nodeNumber == 255) return false;
+	if (sensorType > 29) return false; 					// Return false if node is not a valid sensor type
+	int jsonData1;
+
+	const JsonParserGeneratorRK::jsmntok_t *nodesArrayContainer;			// Token for the outer array
+	jp.getValueTokenByKey(jp.getOuterObject(), "nodes", nodesArrayContainer);
+	const JsonParserGeneratorRK::jsmntok_t *nodeObjectContainer;			// Token for the objects in the array (I beleive)
+
+	nodeObjectContainer = jp.getTokenByIndex(nodesArrayContainer, nodeNumber-1);
+	if(nodeObjectContainer == NULL) return false;						    // Ran out of entries 
+
+	jp.getValueByKey(nodeObjectContainer, "p1", jsonData1);
+
+	Log.info("Updating jsonData1 value from %d to %d", jsonData1, newJsonData1);
+
+	const JsonParserGeneratorRK::jsmntok_t *value;
+
+	jp.getValueTokenByKey(nodeObjectContainer, "p1", value);
+
+	JsonModifier mod(jp);
+
+	mod.startModify(value);
+	mod.insertValue((int)newJsonData1);
+	mod.finish();
+
+	nodeDatabase.set_nodeIDJson(jp.getBuffer());									// This should backup the nodeID database - now updated to persistent storage
+
+	return true;
+}
+
+bool setJsonData2(int nodeNumber, int sensorType, int newJsonData2) {
+	if (nodeNumber == 0 || nodeNumber == 255) return false;
+	if (sensorType < 10 || sensorType > 19) return false; 					// Return false if node is not an occupancy counter
+
+	int jsonData2;
+
+	const JsonParserGeneratorRK::jsmntok_t *nodesArrayContainer;			// Token for the outer array
+	jp.getValueTokenByKey(jp.getOuterObject(), "nodes", nodesArrayContainer);
+	const JsonParserGeneratorRK::jsmntok_t *nodeObjectContainer;			// Token for the objects in the array (I beleive)
+
+	nodeObjectContainer = jp.getTokenByIndex(nodesArrayContainer, nodeNumber-1);
+	if(nodeObjectContainer == NULL) return false;								// Ran out of entries 
+
+	jp.getValueByKey(nodeObjectContainer, "p2", jsonData2);
+
+	Log.info("Updating jsonData2 value from %d to %d", jsonData2, newJsonData2);
+
+	const JsonParserGeneratorRK::jsmntok_t *value;
+
+	jp.getValueTokenByKey(nodeObjectContainer, "p2", value);
+
+	JsonModifier mod(jp);
+
+	mod.startModify(value);
+	mod.insertValue((int)newJsonData2);
+	mod.finish();
+
+	nodeDatabase.set_nodeIDJson(jp.getBuffer());									// This should backup the nodeID database - now updated to persistent storage
+
+	return true;
+}
