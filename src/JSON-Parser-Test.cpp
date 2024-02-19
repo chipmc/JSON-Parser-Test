@@ -19,6 +19,10 @@ void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok);
 bool setJsonData1(int nodeNumber, int sensorType, int newJsonData1);
 bool setJsonData2(int nodeNumber, int sensorType, int newJsonData2);
 
+bool saveNeeded = false;											// Use this to rate limit saves to the nodeDatabase
+unsigned long lastSave = 0;											// Use this to rate limit saves to the nodeDatabase
+unsigned long saveFrequency = 1000;									// Use this to rate limit saves to the nodeDatabase
+
 // Variables to build structure
 uint32_t uniqueID_1 = 2613470560;
 uint32_t uniqueID_2 = 2121360342;
@@ -123,7 +127,7 @@ void setup() {
 		Log.info("Parsing error");
 	}
 
-	printTokens(jp, false);
+	printTokens(jp, true);
 
 	Log.info("Next, we will load and store the node database into memory");
 
@@ -247,6 +251,13 @@ void loop() {
    // TODO: print the raw string to see if the code is parsible, yet has a buildup of closing brackets that may cause issues elsewhere
    
     numLoops++;
+
+	if (saveNeeded && (millis() - lastSave > saveFrequency)) {
+		nodeDatabase.flush(false);
+		saveNeeded = false;
+		lastSave = millis();
+		Log.info("Saved the nodeDatabase");
+	}
 }
 
 byte findNodeNumber(uint32_t uniqueID) {
@@ -287,6 +298,8 @@ byte findNodeNumber(uint32_t uniqueID) {
 		mod.finishObjectOrArray();
 	mod.finish();
 
+	saveNeeded = true;
+
 	return index;
 }
 
@@ -302,48 +315,6 @@ uint32_t findUniqueID(uint8_t node) {
 	if ((jp.getValueByKey(nodeObjectContainer, "uID", nodeUniqueID))) return nodeUniqueID;
 	else return 0;	// Get the deviceID and compare
 }
-
-// **********************  The set Type function could be made as simple as this **********************
-// **********************  The set Type function could be made as simple as this **********************
-// **********************  The set Type function could be made as simple as this **********************
-
-
-bool changetype(int nodeNumber, int Newtype) {
-
-	int type;
-
-	const JsonParserGeneratorRK::jsmntok_t *nodesArrayContainer;			// Token for the outer array
-	jp.getValueTokenByKey(jp.getOuterObject(), "nodes", nodesArrayContainer);
-	const JsonParserGeneratorRK::jsmntok_t *nodeObjectContainer;			// Token for the objects in the array (I beleive)
-
-	nodeObjectContainer = jp.getTokenByIndex(nodesArrayContainer, nodeNumber-1);
-	if(nodeObjectContainer == NULL) return false;								// Ran out of entries
-
-	jp.getValueByKey(nodeObjectContainer, "type", type);
-
-	Log.info("Changing sensor type from %d to %d", type, Newtype);
-
-	const JsonParserGeneratorRK::jsmntok_t *value;
-
-	jp.getValueTokenByKey(nodeObjectContainer, "type", value);
-
-	JsonModifier mod(jp);
-
-	mod.startModify(value);
-
-	mod.insertValue((int)Newtype);
-	mod.finish();
-
-	return true;
-
-}
-
-// **********************  The set Type function could be made as simple as changeType above **********************
-// Once we same the type, then the p1 and p2 values could store gross and net but, no change to the JSON structure is needed
-// Would need to create a function to setCounts which would just go in and update the values of p1 / p2 for the node
-// ****************************************************************************************************************
-
-
 
 bool setType(int nodeNumber, int newType) {
 	if (nodeNumber == 0 || nodeNumber == 255) return false;
@@ -395,6 +366,8 @@ bool setType(int nodeNumber, int newType) {
 	mod.insertValue((int)0);
 
 	mod.finish();
+
+	saveNeeded = true;
 
 	return true;
 }
@@ -494,7 +467,7 @@ void printTokens(JsonParser &jp, bool verbose) {
 	int storageSize = 0;
 	int tokenCount = 0;
 	char tempBuf[3076];
-	if (verbose) Log.info("printing tokens");
+
 	JsonParserGeneratorRK::jsmntok_t *tokensEnd = jp.getTokensEnd();
 
 	// The first token is the outer object - here we get the total size of the object
@@ -504,12 +477,7 @@ void printTokens(JsonParser &jp, bool verbose) {
 	storageSize += tok->end;
 	if (verbose) Log.info("Outer object start=%d end=%d tokens=%d - %s", tok->start, tok->end, tok->size, tempBuf);
 
-	const char *charlike = "test";
-	sniprintf(tempBuf, sizeof(tempBuf), "test %s", charlike);
-	Particle.publish("Test",tempBuf, PRIVATE);
-
 	for(JsonParserGeneratorRK::jsmntok_t *tok = jp.getTokens(); tok < tokensEnd; tok++) {
-
 		if (tok->start > 0) {
 			tokenCount += tok->size;
 		}
@@ -522,7 +490,7 @@ void printTokens(JsonParser &jp, bool verbose) {
 }
 
 void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok) {
-	char tempBuf[1024];
+	char tempBuf[4096];
 
 	const char *typeName = "UNKNOWN";
 	switch(tok->type) {
@@ -633,6 +601,8 @@ bool setJsonData1(int nodeNumber, int sensorType, int newJsonData1) {
 
 	nodeDatabase.set_nodeIDJson(jp.getBuffer());									// This should backup the nodeID database - now updated to persistent storage
 
+	saveNeeded = true;
+
 	return true;
 }
 
@@ -664,6 +634,8 @@ bool setJsonData2(int nodeNumber, int sensorType, int newJsonData2) {
 	mod.finish();
 
 	nodeDatabase.set_nodeIDJson(jp.getBuffer());									// This should backup the nodeID database - now updated to persistent storage
+
+	saveNeeded = true;
 
 	return true;
 }
