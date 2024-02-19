@@ -5,14 +5,10 @@
 #include "JsonParserGeneratorRK.h"
 #include <cstdlib> // For rand() and srand()
 
-// **************************  Started implemening the fix in this code **************************
-// **************************  Started implemening the fix in this code **************************
-// **************************  Started implemening the fix in this code **************************
-
 SerialLogHandler LogHandler;
 
 byte findNodeNumber(uint32_t uniqueID);					// This will create a new node number if the uniqueID is not found
-void printNodeData(bool publish);
+int printNodeData(bool publish);
 bool parseJoinPayloadValues(uint8_t sensorType, uint8_t compressedJoinPayload, uint8_t& payload1, uint8_t& payload2, uint8_t& payload3, uint8_t& payload4);
 uint8_t compressData(uint8_t data[], uint8_t bitSizes[]);
 void decompressData(uint8_t compressedData, uint8_t data[], uint8_t bitSizes[]);
@@ -29,6 +25,8 @@ uint32_t uniqueID_2 = 2121360342;
 int sensorType_1 = 3;
 int sensorType_2 = 4;
 int sensorType_3 = 10;
+int numberOfNodes = 0;
+
 
 SYSTEM_MODE(MANUAL);
 
@@ -205,6 +203,8 @@ void setup() {
 
 	printTokens(jp, false);
 
+	numberOfNodes = printNodeData(false);
+
 	Log.info("Notice how the new node is now at the end of the outer ojbect - this will break our code");
 
 	Log.info("Finished Parsing Test. Running data report tests in a loop.");
@@ -215,7 +215,7 @@ void loop() {
 	delay(2000);
     static int numLoops = 0;
 
-    int currentIndex = numLoops % uniqueIDsCount;
+    int currentIndex = numLoops % numberOfNodes;
 
     // Initialize a new DataReport object with the next uniqueID in the list. This will be incremental by index and loop infinitely.
     DataReport report = DataReport(uniqueIDs[currentIndex]); 
@@ -237,8 +237,8 @@ void loop() {
     Gateway::instance().processDataReport(report); // Send the data report to the gateway to populate MyPersistentData's current struct. 
 
     // Update the JSON database with the data that is set after the report. This simulates the way the JSON is updated over time through data reports.
-    bool result1 = setJsonData1(current.get_nodeNumber(), current.get_sensorType(), current.get_payload3() <<8 | current.get_payload4());
-    bool result2 = setJsonData2(current.get_nodeNumber(), current.get_sensorType(), current.get_payload1() <<8 | current.get_payload2());
+    bool result1 = setJsonData1(currentIndex+1, 10, current.get_payload3() <<8 | current.get_payload4());
+    bool result2 = setJsonData2(currentIndex+1, 10, current.get_payload1() <<8 | current.get_payload2());
 
     if(!(result1 && result2)){
         Log.info("Failed to set Json Data!! Tokens:");
@@ -461,7 +461,7 @@ byte getType(int nodeNumber) {
 
 }
 
-void printNodeData(bool publish) {
+int printNodeData(bool publish) {
 	int nodeNumber;
 	uint32_t uniqueID;
 	int sensorType;
@@ -529,6 +529,8 @@ void printNodeData(bool publish) {
 		}
 	}
 	Log.info(nodeDatabase.get_nodeIDJson());  // See the raw JSON string
+
+	return nodeNumber;
 }
 
 // Function to dump the token table. Used while debugging the JsonModify code.
