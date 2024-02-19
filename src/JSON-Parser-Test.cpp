@@ -5,14 +5,10 @@
 #include "JsonParserGeneratorRK.h"
 #include <cstdlib> // For rand() and srand()
 
-// **************************  Started implemening the fix in this code **************************
-// **************************  Started implemening the fix in this code **************************
-// **************************  Started implemening the fix in this code **************************
-
 SerialLogHandler LogHandler;
 
 byte findNodeNumber(uint32_t uniqueID);					// This will create a new node number if the uniqueID is not found
-void printNodeData(bool publish);
+int printNodeData(bool publish);
 bool parseJoinPayloadValues(uint8_t sensorType, uint8_t compressedJoinPayload, uint8_t& payload1, uint8_t& payload2, uint8_t& payload3, uint8_t& payload4);
 uint8_t compressData(uint8_t data[], uint8_t bitSizes[]);
 void decompressData(uint8_t compressedData, uint8_t data[], uint8_t bitSizes[]);
@@ -29,6 +25,8 @@ uint32_t uniqueID_2 = 2121360342;
 int sensorType_1 = 3;
 int sensorType_2 = 4;
 int sensorType_3 = 10;
+int numberOfNodes = 0;
+
 
 SYSTEM_MODE(MANUAL);
 
@@ -79,7 +77,8 @@ Stretch Area : 660218114 ["9","true","true"]
 
 */
 
-const char * const data = "{\"nodes\":[{\"node\":1,\"uID\":2613470559,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":1},{\"node\":2,\"uID\":2121360342,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":2},{\"node\":3,\"uID\":2113381891,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":3},{\"node\":4,\"uID\":2222090124,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":4},{\"node\":5,\"uID\":2839639610,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":5},{\"node\":6,\"uID\":95839962,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":6},{\"node\":7,\"uID\":3818678341,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":7},{\"node\":8,\"uID\":2824039299,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":8},{\"node\":9,\"uID\":2561435892,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":9},{\"node\":10,\"uID\":3633933507,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":10},{\"node\":11,\"uID\":2647744414,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":11},{\"node\":12,\"uID\":3662503554,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":12},{\"node\":13,\"uID\":2585746525,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":13},{\"node\":14,\"uID\":660218114,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":14}]}"; 
+//const char * const data = "{\"nodes\":[{\"node\":1,\"uID\":2613470559,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":1},{\"node\":2,\"uID\":2121360342,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":2},{\"node\":3,\"uID\":2113381891,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":3},{\"node\":4,\"uID\":2222090124,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":4},{\"node\":5,\"uID\":2839639610,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":5},{\"node\":6,\"uID\":95839962,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":6},{\"node\":7,\"uID\":3818678341,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":7},{\"node\":8,\"uID\":2824039299,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":8},{\"node\":9,\"uID\":2561435892,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":9},{\"node\":10,\"uID\":3633933507,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":10},{\"node\":11,\"uID\":2647744414,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":11},{\"node\":12,\"uID\":3662503554,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":12},{\"node\":13,\"uID\":2585746525,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":13},{\"node\":14,\"uID\":660218114,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":14}]}"; 
+const char * const data = "{\"nodes\":[{\"node\":1,\"uID\":2613470559,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":1},{\"node\":2,\"uID\":2121360342,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":2}]}"; 
 
 // Array to store the unique IDs. We will loop through these in our data report test.
 const uint32_t uniqueIDs[] = {
@@ -118,7 +117,11 @@ void setup() {
 	
 	jp.addString(data);
 
-	jp.parse();
+	if (jp.parse()) Log.info("Parsed Successfully");
+	else {
+		nodeDatabase.resetNodeIDs();
+		Log.info("Parsing error");
+	}
 
 	printTokens(jp, true);
 
@@ -200,6 +203,8 @@ void setup() {
 
 	printTokens(jp, false);
 
+	numberOfNodes = printNodeData(false);
+
 	Log.info("Notice how the new node is now at the end of the outer ojbect - this will break our code");
 
 	Log.info("Finished Parsing Test. Running data report tests in a loop.");
@@ -210,7 +215,7 @@ void loop() {
 	delay(2000);
     static int numLoops = 0;
 
-    int currentIndex = numLoops % uniqueIDsCount;
+    int currentIndex = numLoops % numberOfNodes;
 
     // Get the current time using Particle's Time.now()
     unsigned long currentTime = Time.now();
@@ -227,9 +232,10 @@ void loop() {
 
     Gateway::instance().processDataReport(report); // Send the data report to the gateway to populate MyPersistentData
 
-    // Update the JSON database with the data that is set after the report.
-    bool result1 = setJsonData1(current.get_nodeNumber(), current.get_sensorType(), current.get_payload3() <<8 | current.get_payload4());
-    bool result2 = setJsonData2(current.get_nodeNumber(), current.get_sensorType(), current.get_payload1() <<8 | current.get_payload2());
+
+    // Update the JSON database with the data that is set after the report. This simulates the way the JSON is updated over time through data reports.
+    bool result1 = setJsonData1(currentIndex+1, 10, current.get_payload3() <<8 | current.get_payload4());
+    bool result2 = setJsonData2(currentIndex+1, 10, current.get_payload1() <<8 | current.get_payload2());
 
     if(!(result1 && result2)){
         Log.info("Failed to set Json Data!! Tokens:");
@@ -449,7 +455,7 @@ byte getType(int nodeNumber) {
 
 }
 
-void printNodeData(bool publish) {
+int printNodeData(bool publish) {
 	int nodeNumber;
 	uint32_t uniqueID;
 	int sensorType;
@@ -517,6 +523,8 @@ void printNodeData(bool publish) {
 		}
 	}
 	Log.info(nodeDatabase.get_nodeIDJson());  // See the raw JSON string
+
+	return nodeNumber;
 }
 
 // Function to dump the token table. Used while debugging the JsonModify code.
