@@ -79,7 +79,8 @@ Stretch Area : 660218114 ["9","true","true"]
 
 */
 
-const char * const data = "{\"nodes\":[{\"node\":1,\"uID\":2613470559,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":1},{\"node\":2,\"uID\":2121360342,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":2},{\"node\":3,\"uID\":2113381891,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":3},{\"node\":4,\"uID\":2222090124,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":4},{\"node\":5,\"uID\":2839639610,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":5},{\"node\":6,\"uID\":95839962,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":6},{\"node\":7,\"uID\":3818678341,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":7},{\"node\":8,\"uID\":2824039299,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":8},{\"node\":9,\"uID\":2561435892,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":9},{\"node\":10,\"uID\":3633933507,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":10},{\"node\":11,\"uID\":2647744414,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":11},{\"node\":12,\"uID\":3662503554,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":12},{\"node\":13,\"uID\":2585746525,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":13},{\"node\":14,\"uID\":660218114,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":14}]}"; 
+//const char * const data = "{\"nodes\":[{\"node\":1,\"uID\":2613470559,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":1},{\"node\":2,\"uID\":2121360342,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":2},{\"node\":3,\"uID\":2113381891,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":3},{\"node\":4,\"uID\":2222090124,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":4},{\"node\":5,\"uID\":2839639610,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":5},{\"node\":6,\"uID\":95839962,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":6},{\"node\":7,\"uID\":3818678341,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":7},{\"node\":8,\"uID\":2824039299,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":8},{\"node\":9,\"uID\":2561435892,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":9},{\"node\":10,\"uID\":3633933507,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":10},{\"node\":11,\"uID\":2647744414,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":11},{\"node\":12,\"uID\":3662503554,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":12},{\"node\":13,\"uID\":2585746525,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":13},{\"node\":14,\"uID\":660218114,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":14}]}"; 
+const char * const data = "{\"nodes\":[{\"node\":1,\"uID\":2613470559,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":1},{\"node\":2,\"uID\":2121360342,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":2}]}"; 
 
 // Array to store the unique IDs. We will loop through these in our data report test.
 const uint32_t uniqueIDs[] = {
@@ -118,7 +119,11 @@ void setup() {
 	
 	jp.addString(data);
 
-	jp.parse();
+	if (jp.parse()) Log.info("Parsed Successfully");
+	else {
+		nodeDatabase.resetNodeIDs();
+		Log.info("Parsing error");
+	}
 
 	printTokens(jp, true);
 
