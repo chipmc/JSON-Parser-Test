@@ -21,19 +21,19 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
   8 .module_info_crc 00000004  000bb088  000bb088  0002b088  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  9 .debug_info   0015ecb2  00000000  00000000  0002b08c  2**0
+  9 .debug_info   0015ecaf  00000000  00000000  0002b08c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 10 .debug_abbrev 000171cd  00000000  00000000  00189d3e  2**0
+ 10 .debug_abbrev 000171cd  00000000  00000000  00189d3b  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 11 .debug_loc    000480e2  00000000  00000000  001a0f0b  2**0
+ 11 .debug_loc    000480e2  00000000  00000000  001a0f08  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 12 .debug_aranges 00003478  00000000  00000000  001e8fed  2**0
+ 12 .debug_aranges 00003478  00000000  00000000  001e8fea  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_ranges 0000c7a8  00000000  00000000  001ec465  2**0
+ 13 .debug_ranges 0000c7a8  00000000  00000000  001ec462  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_macro  0003efb0  00000000  00000000  001f8c0d  2**0
+ 14 .debug_macro  0003efb0  00000000  00000000  001f8c0a  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_line   0004f01b  00000000  00000000  00237bbd  2**0
+ 15 .debug_line   0004f01e  00000000  00000000  00237bba  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  16 .debug_str    00142893  00000000  00000000  00286bd8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
@@ -1219,7 +1219,6 @@ inline spark::Vector<T, AllocatorT>::Vector(const Vector<T, AllocatorT>& vector)
 	nodeDatabase.set_nodeIDJson(jp.getBuffer());									// This should backup the nodeID database - now updated to persistent storage
 
 	return true;
-}
    b47d4:	b5f0      	push	{r4, r5, r6, r7, lr}
         val_(val) {
    b47d6:	4b2d      	ldr	r3, [pc, #180]	; (b488c <_GLOBAL__sub_I_LogHandler+0xb8>)
@@ -1310,7 +1309,6 @@ String s;
    b487c:	490c      	ldr	r1, [pc, #48]	; (b48b0 <_GLOBAL__sub_I_LogHandler+0xdc>)
    b487e:	480d      	ldr	r0, [pc, #52]	; (b48b4 <_GLOBAL__sub_I_LogHandler+0xe0>)
    b4880:	6023      	str	r3, [r4, #0]
-}
    b4882:	b00f      	add	sp, #60	; 0x3c
    b4884:	e8bd 40f0 	ldmia.w	sp!, {r4, r5, r6, r7, lr}
 String s;
@@ -2143,7 +2141,6 @@ bool setJsonData2(int nodeNumber, int sensorType, int newJsonData2) {
    b4f38:	f000 f8c6 	bl	b50c8 <_ZN12JsonModifierD1Ev>
 	return true;
    b4f3c:	2001      	movs	r0, #1
-}
    b4f3e:	b017      	add	sp, #92	; 0x5c
    b4f40:	bdf0      	pop	{r4, r5, r6, r7, pc}
 	if (nodeNumber == 0 || nodeNumber == 255) return false;
@@ -2172,43 +2169,43 @@ void loop() {
    b4f74:	681b      	ldr	r3, [r3, #0]
    b4f76:	fb96 f2f3 	sdiv	r2, r6, r3
    b4f7a:	fb03 6612 	mls	r6, r3, r2, r6
-    DataReport report = DataReport(uniqueIDs[currentIndex]); 
-   b4f7e:	4b37      	ldr	r3, [pc, #220]	; (b505c <loop+0x100>)
-   b4f80:	af0d      	add	r7, sp, #52	; 0x34
-   b4f82:	f853 1026 	ldr.w	r1, [r3, r6, lsl #2]
-   b4f86:	4638      	mov	r0, r7
-   b4f88:	f001 fcb2 	bl	b68f0 <_ZN10DataReportC1Em>
     unsigned long currentTime = Time.now();
-   b4f8c:	f004 f8b4 	bl	b90f8 <_ZN9TimeClass3nowEv>
+   b4f7e:	f004 f8bb 	bl	b90f8 <_ZN9TimeClass3nowEv>
     std::srand(currentTime);
-   b4f90:	f004 fcce 	bl	b9930 <srand>
-    report.setOccupancyNet(std::rand() % 1001); // The data report will have a random value for occupancyNet
-   b4f94:	f004 fcfa 	bl	b998c <rand>
-   b4f98:	f240 34e9 	movw	r4, #1001	; 0x3e9
-   b4f9c:	fb90 f1f4 	sdiv	r1, r0, r4
-   b4fa0:	fb01 0114 	mls	r1, r1, r4, r0
-   b4fa4:	b289      	uxth	r1, r1
-   b4fa6:	4638      	mov	r0, r7
-   b4fa8:	f001 fcb9 	bl	b691e <_ZN10DataReport15setOccupancyNetEt>
-    report.setOccupancyGross(std::rand() % 1001); // The data report will have a random value for occupancyGross
-   b4fac:	f004 fcee 	bl	b998c <rand>
-   b4fb0:	fb90 f1f4 	sdiv	r1, r0, r4
-   b4fb4:	fb01 0114 	mls	r1, r1, r4, r0
+   b4f82:	f004 fcd5 	bl	b9930 <srand>
+    DataReport report = DataReport(uniqueIDs[currentIndex]); 
+   b4f86:	4b35      	ldr	r3, [pc, #212]	; (b505c <loop+0x100>)
+   b4f88:	af0d      	add	r7, sp, #52	; 0x34
+   b4f8a:	f853 1026 	ldr.w	r1, [r3, r6, lsl #2]
+   b4f8e:	4638      	mov	r0, r7
     report.setNodeNumber(currentIndex + 1); // The nodeNumber is equal to the index + 1 for all uniqueIDs
-   b4fb8:	3601      	adds	r6, #1
-    report.setOccupancyGross(std::rand() % 1001); // The data report will have a random value for occupancyGross
-   b4fba:	b289      	uxth	r1, r1
-   b4fbc:	4638      	mov	r0, r7
-   b4fbe:	f001 fcac 	bl	b691a <_ZN10DataReport17setOccupancyGrossEt>
+   b4f90:	3601      	adds	r6, #1
+    DataReport report = DataReport(uniqueIDs[currentIndex]); 
+   b4f92:	f001 fcad 	bl	b68f0 <_ZN10DataReportC1Em>
     report.setNodeNumber(currentIndex + 1); // The nodeNumber is equal to the index + 1 for all uniqueIDs
-   b4fc2:	b2f1      	uxtb	r1, r6
-   b4fc4:	4638      	mov	r0, r7
-   b4fc6:	f001 fca3 	bl	b6910 <_ZN10DataReport13setNodeNumberEh>
+   b4f96:	b2f1      	uxtb	r1, r6
+   b4f98:	4638      	mov	r0, r7
+   b4f9a:	f001 fcb9 	bl	b6910 <_ZN10DataReport13setNodeNumberEh>
     report.setSensorType(10); // sensorType is 10 for occupancy nodes
-   b4fca:	210a      	movs	r1, #10
+   b4f9e:	210a      	movs	r1, #10
+   b4fa0:	4638      	mov	r0, r7
+   b4fa2:	f001 fcb7 	bl	b6914 <_ZN10DataReport13setSensorTypeEh>
+    report.setOccupancyNet(std::rand() % 1001); // The data report will have a random value for occupancyNet
+   b4fa6:	f004 fcf1 	bl	b998c <rand>
+   b4faa:	f240 34e9 	movw	r4, #1001	; 0x3e9
+   b4fae:	fb90 f1f4 	sdiv	r1, r0, r4
+   b4fb2:	fb01 0114 	mls	r1, r1, r4, r0
+   b4fb6:	b289      	uxth	r1, r1
+   b4fb8:	4638      	mov	r0, r7
+   b4fba:	f001 fcb0 	bl	b691e <_ZN10DataReport15setOccupancyNetEt>
+    report.setOccupancyGross(std::rand() % 1001); // The data report will have a random value for occupancyGross
+   b4fbe:	f004 fce5 	bl	b998c <rand>
+   b4fc2:	fb90 f1f4 	sdiv	r1, r0, r4
+   b4fc6:	fb01 0114 	mls	r1, r1, r4, r0
+   b4fca:	b289      	uxth	r1, r1
    b4fcc:	4638      	mov	r0, r7
-   b4fce:	f001 fca1 	bl	b6914 <_ZN10DataReport13setSensorTypeEh>
-    Gateway::instance().processDataReport(report); // Send the data report to the gateway to populate MyPersistentData's current struct. 
+   b4fce:	f001 fca4 	bl	b691a <_ZN10DataReport17setOccupancyGrossEt>
+    Gateway::instance().processDataReport(report); // Send the data report to the gateway to populate MyPersistentData
    b4fd2:	f001 fcff 	bl	b69d4 <_ZN7Gateway8instanceEv>
    b4fd6:	ad10      	add	r5, sp, #64	; 0x40
    b4fd8:	4684      	mov	ip, r0
