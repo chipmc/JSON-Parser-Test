@@ -217,22 +217,26 @@ void loop() {
 
     int currentIndex = numLoops % uniqueIDsCount;
 
+    // Initialize a new DataReport object with the next uniqueID in the list. This will be incremental by index and loop infinitely.
+    DataReport report = DataReport(uniqueIDs[currentIndex]); 
+	
+    // **************************  Generate Random Numbers for OccupancyGross and Net **************************
     // Get the current time using Particle's Time.now()
     unsigned long currentTime = Time.now();
-    // Seed a random number generator with the current time
+    // Seed a random number generator with the current time so it is different every execution
     std::srand(currentTime);
 
-    // Initialize a new DataReport object with the next uniqueID in the list
-    DataReport report = DataReport(uniqueIDs[currentIndex]); 
-    report.setNodeNumber(currentIndex + 1); // The nodeNumber is equal to the index + 1 for all uniqueIDs
-    report.setSensorType(10); // sensorType is 10 for occupancy nodes
     report.setOccupancyNet(std::rand() % 1001); // The data report will have a random value for occupancyNet
     report.setOccupancyGross(std::rand() % 1001); // The data report will have a random value for occupancyGross
+
+    // **************************  Change other values in this loop's data report **************************
+    report.setNodeNumber(currentIndex + 1); // The nodeNumber is equal to the index + 1 for all uniqueIDs
+    report.setSensorType(10); // sensorType is 10 for occupancy nodes
     // Set other parameters here if you wish to test them ...
 
-    Gateway::instance().processDataReport(report); // Send the data report to the gateway to populate MyPersistentData
+    Gateway::instance().processDataReport(report); // Send the data report to the gateway to populate MyPersistentData's current struct. 
 
-    // Update the JSON database with the data that is set after the report.
+    // Update the JSON database with the data that is set after the report. This simulates the way the JSON is updated over time through data reports.
     bool result1 = setJsonData1(current.get_nodeNumber(), current.get_sensorType(), current.get_payload3() <<8 | current.get_payload4());
     bool result2 = setJsonData2(current.get_nodeNumber(), current.get_sensorType(), current.get_payload1() <<8 | current.get_payload2());
 
@@ -240,7 +244,10 @@ void loop() {
         Log.info("Failed to set Json Data!! Tokens:");
     }
 
-	printTokens(jp, true);
+   // Print all of the tokens to see if there are any cases where the string becomes unparsible
+   printTokens(jp, true);
+
+   // TODO: print the raw string to see if the code is parsible, yet has a buildup of closing brackets that may cause issues elsewhere
    
     numLoops += 1;
 }
