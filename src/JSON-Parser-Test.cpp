@@ -77,8 +77,8 @@ Stretch Area : 660218114 ["9","true","true"]
 
 */
 
-//const char * const data = "{\"nodes\":[{\"node\":1,\"uID\":2613470559,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":1},{\"node\":2,\"uID\":2121360342,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":2},{\"node\":3,\"uID\":2113381891,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":3},{\"node\":4,\"uID\":2222090124,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":4},{\"node\":5,\"uID\":2839639610,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":5},{\"node\":6,\"uID\":95839962,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":6},{\"node\":7,\"uID\":3818678341,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":7},{\"node\":8,\"uID\":2824039299,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":8},{\"node\":9,\"uID\":2561435892,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":9},{\"node\":10,\"uID\":3633933507,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":10},{\"node\":11,\"uID\":2647744414,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":11},{\"node\":12,\"uID\":3662503554,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":12},{\"node\":13,\"uID\":2585746525,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":13},{\"node\":14,\"uID\":660218114,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":14}]}"; 
-const char * const data = "{\"nodes\":[{\"node\":1,\"uID\":2613470559,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":1},{\"node\":2,\"uID\":2121360342,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":2}]}"; 
+const char * const data = "{\"nodes\":[{\"node\":1,\"uID\":2613470559,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":1},{\"node\":2,\"uID\":2121360342,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":2},{\"node\":3,\"uID\":2113381891,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":3},{\"node\":4,\"uID\":2222090124,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":4},{\"node\":5,\"uID\":2839639610,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":5},{\"node\":6,\"uID\":95839962,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":6},{\"node\":7,\"uID\":3818678341,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":7},{\"node\":8,\"uID\":2824039299,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":8},{\"node\":9,\"uID\":2561435892,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":9},{\"node\":10,\"uID\":3633933507,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":10},{\"node\":11,\"uID\":2647744414,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":11},{\"node\":12,\"uID\":3662503554,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":12},{\"node\":13,\"uID\":2585746525,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":13},{\"node\":14,\"uID\":660218114,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":14}]}"; 
+//const char * const data = "{\"nodes\":[{\"node\":1,\"uID\":2613470559,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":1},{\"node\":2,\"uID\":2121360342,\"type\":1,\"p\":0,\"p1\":0,\"p2\":0,\"pend\":0,\"cont\":2}]}"; 
 
 // Array to store the unique IDs. We will loop through these in our data report test.
 const uint32_t uniqueIDs[] = {
@@ -123,7 +123,7 @@ void setup() {
 		Log.info("Parsing error");
 	}
 
-	printTokens(jp, true);
+	printTokens(jp, false);
 
 	Log.info("Next, we will load and store the node database into memory");
 
@@ -245,11 +245,11 @@ void loop() {
     }
 
    // Print all of the tokens to see if there are any cases where the string becomes unparsible
-   printTokens(jp, true);
+   printTokens(jp, false);
 
    // TODO: print the raw string to see if the code is parsible, yet has a buildup of closing brackets that may cause issues elsewhere
    
-    numLoops += 1;
+    numLoops++;
 }
 
 byte findNodeNumber(uint32_t uniqueID) {
@@ -352,93 +352,52 @@ bool setType(int nodeNumber, int newType) {
 	if (nodeNumber == 0 || nodeNumber == 255) return false;
 	int type;
 	uint32_t uniqueID;
-	int compressedJoinPayload;
-	int pendingAlert;
-	int pendingAlertContext;
+
 
 	const JsonParserGeneratorRK::jsmntok_t *nodesArrayContainer;			// Token for the outer array
 	jp.getValueTokenByKey(jp.getOuterObject(), "nodes", nodesArrayContainer);
 	const JsonParserGeneratorRK::jsmntok_t *nodeObjectContainer;			// Token for the objects in the array (I beleive)
 
 	nodeObjectContainer = jp.getTokenByIndex(nodesArrayContainer, nodeNumber-1);
-	if(nodeObjectContainer == NULL) return false;								// Ran out of entries 
+	if(nodeObjectContainer == NULL) { 
+		Log.info("Ran out of entries");
+		return false;								// Ran out of entries 
+	}
 
 	JsonModifier mod(jp);
 
 	jp.getValueByKey(nodeObjectContainer, "uID", uniqueID);
 	jp.getValueByKey(nodeObjectContainer, "type", type);
-	jp.getValueByKey(nodeObjectContainer, "p", compressedJoinPayload);
-	jp.getValueByKey(nodeObjectContainer, "pend", pendingAlert);
-	jp.getValueByKey(nodeObjectContainer, "cont", pendingAlertContext);
 
 	Log.info("Changing sensor type from %d to %d", type, newType);
 
-	// Remove and Update entry with new type and type specific JSON variables
+	const JsonParserGeneratorRK::jsmntok_t *value;
 
+	jp.getValueTokenByKey(nodeObjectContainer, "type", value);
+	mod.startModify(value);
+	mod.insertValue((int)newType);
 
-	//  ***************************  This could likely be simplified ***************************
-	//  ***************************  This could likely be simplified ***************************
-	//  ***************************  This could likely be simplified ***************************
+	jp.getValueTokenByKey(nodeObjectContainer, "p", value);
+	mod.startModify(value);
+	mod.insertValue((int)0);
 
-	switch (newType) {
-		case 1 ... 9: {    						// Counter
-			mod.removeArrayIndex(nodesArrayContainer, nodeNumber-1);	// remove the JSON as it was
-			mod.startAppend(jp.getOuterArray());						// insert it back, but with the type specific variables for counter
-				mod.startObject();
-					mod.insertKeyValue("node", nodeNumber);
-					mod.insertKeyValue("uID", uniqueID);
-					mod.insertKeyValue("type", newType);					
-					mod.insertKeyValue("p", compressedJoinPayload);
-					mod.insertKeyValue("p1", 0);
-					mod.insertKeyValue("p2", 0);					
-					mod.insertKeyValue("pend",pendingAlert);
-					mod.insertKeyValue("cont",pendingAlertContext);
-					// Add type specific variables here if needed
-				mod.finishObjectOrArray();
-			mod.finish();
-		} break;
-		case 10 ... 19: {   					// Occupancy
-			Log.info("Removing array index");
-			mod.removeArrayIndex(nodesArrayContainer, nodeNumber-1);	// remove the JSON as it was
-			mod.startAppend(jp.getOuterArray());						// insert it back, but with the type specific variables for counter
-				mod.startObject();
-					mod.insertKeyValue("node", nodeNumber);
-					mod.insertKeyValue("uID", uniqueID);
-					mod.insertKeyValue("type", newType);					
-					mod.insertKeyValue("p", compressedJoinPayload);
-					mod.insertKeyValue("p1", 0);
-					mod.insertKeyValue("p2", 0);		
-					mod.insertKeyValue("pend",pendingAlert);
-					mod.insertKeyValue("cont",pendingAlertContext);
-				mod.finishObjectOrArray();
-			mod.finish();
-			Log.info("append complete");
+	jp.getValueTokenByKey(nodeObjectContainer, "p1", value);
+	mod.startModify(value);
+	mod.insertValue((int)0);
 
-		} break;
-		case 20 ... 29: {   					// Sensor
-			mod.removeArrayIndex(nodesArrayContainer, nodeNumber-1);	// remove the JSON as it was
-			mod.startAppend(jp.getOuterArray());						// insert it back, but with the type specific variables for counter
-				mod.startObject();
-					mod.insertKeyValue("node", nodeNumber);
-					mod.insertKeyValue("uID", uniqueID);
-					mod.insertKeyValue("type", newType);					
-					mod.insertKeyValue("p", compressedJoinPayload);
-					mod.insertKeyValue("p1", 0);
-					mod.insertKeyValue("p2", 0);		
-					mod.insertKeyValue("pend",pendingAlert);
-					mod.insertKeyValue("cont",pendingAlertContext);
-					// Add type specific variables here if needed
-				mod.finishObjectOrArray();
-			mod.finish();
-		} break;
-		default: {          		
-			Log.info("Unable to update to new sensorType in setType: %d", newType);
-			if (Particle.connected()) Particle.publish("Alert", "Unable to update to new sensorType in setType", PRIVATE);
-		} break;
-	}
+	jp.getValueTokenByKey(nodeObjectContainer, "p2", value);
+	mod.startModify(value);
+	mod.insertValue((int)0);
 
-	nodeDatabase.set_nodeIDJson(jp.getBuffer());									// This should backup the nodeID database - now updated to persistent storage
-	nodeDatabase.flush(false);													// Store the nodeDatabase into memory
+	jp.getValueTokenByKey(nodeObjectContainer, "pend", value);
+	mod.startModify(value);
+	mod.insertValue((int)0);
+
+	jp.getValueTokenByKey(nodeObjectContainer, "cont", value);
+	mod.startModify(value);
+	mod.insertValue((int)0);
+
+	mod.finish();
 
 	return true;
 }
@@ -537,7 +496,7 @@ int printNodeData(bool publish) {
 void printTokens(JsonParser &jp, bool verbose) {
 	int storageSize = 0;
 	int tokenCount = 0;
-	char tempBuf[1024];
+	char tempBuf[3076];
 	if (verbose) Log.info("printing tokens");
 	JsonParserGeneratorRK::jsmntok_t *tokensEnd = jp.getTokensEnd();
 
@@ -663,7 +622,7 @@ bool setJsonData1(int nodeNumber, int sensorType, int newJsonData1) {
 
 	jp.getValueByKey(nodeObjectContainer, "p1", jsonData1);
 
-	Log.info("Updating jsonData1 value from %d to %d", jsonData1, newJsonData1);
+	Log.info("Updating jsonData1 value for node %d from %d to %d", nodeNumber, jsonData1, newJsonData1);
 
 	const JsonParserGeneratorRK::jsmntok_t *value;
 
@@ -695,7 +654,7 @@ bool setJsonData2(int nodeNumber, int sensorType, int newJsonData2) {
 
 	jp.getValueByKey(nodeObjectContainer, "p2", jsonData2);
 
-	Log.info("Updating jsonData2 value from %d to %d", jsonData2, newJsonData2);
+	Log.info("Updating jsonData2 value for node %d from %d to %d", nodeNumber, jsonData2, newJsonData2);
 
 	const JsonParserGeneratorRK::jsmntok_t *value;
 
