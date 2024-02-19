@@ -216,40 +216,59 @@ void setup() {
 }
 
 void loop() {
+
 	delay(2000);
+	
     static int numLoops = 0;
 
     int currentIndex = numLoops % numberOfNodes;
+
+	int nodeNumber = currentIndex + 1;
 
     // Get the current time using Particle's Time.now()
     unsigned long currentTime = Time.now();
     // Seed a random number generator with the current time
     std::srand(currentTime);
+	// Create two random numbers of digits 1-4
+	int num1 = std::rand() % 4 + 1;
+	int num2 = std::rand() % 4 + 1;
+    // Create occupancyGross and occupancyNet with num1 and num2 amount of characters
+    int occupancyGross = 0;
+    int occupancyNet = 0;
+	// Create two random numbers with the respective amount of digits
+    for (int i = 0; i < num1; ++i) {
+        occupancyGross = occupancyGross * 10 + std::rand() % 10;
+    }
+    for (int i = 0; i < num2; ++i) {
+        occupancyNet = occupancyNet * 10 + std::rand() % 10;
+    }
 
     // Initialize a new DataReport object with the next uniqueID in the list
     DataReport report = DataReport(uniqueIDs[currentIndex]); 
     report.setNodeNumber(currentIndex + 1); // The nodeNumber is equal to the index + 1 for all uniqueIDs
     report.setSensorType(10); // sensorType is 10 for occupancy nodes
-    report.setOccupancyNet(std::rand() % 1001); // The data report will have a random value for occupancyNet
-    report.setOccupancyGross(std::rand() % 1001); // The data report will have a random value for occupancyGross
-    // Set other parameters here if you wish to test them ...
+    report.setOccupancyNet(occupancyNet); // The data report will have a random value for occupancyNet
+    report.setOccupancyGross(occupancyGross); // The data report will have a random value for occupancyGross
+    // Set other parameters here if you wish to test them ... cont might be good to test. 
 
     Gateway::instance().processDataReport(report); // Send the data report to the gateway to populate MyPersistentData
 
-
     // Update the JSON database with the data that is set after the report. This simulates the way the JSON is updated over time through data reports.
-    bool result1 = setJsonData1(currentIndex+1, 10, current.get_payload3() <<8 | current.get_payload4());
-    bool result2 = setJsonData2(currentIndex+1, 10, current.get_payload1() <<8 | current.get_payload2());
+    bool result1 = setJsonData1(currentIndex + 1, 10, current.get_payload3() <<8 | current.get_payload4());
+    bool result2 = setJsonData2(currentIndex + 1, 10, current.get_payload1() <<8 | current.get_payload2());
 
     if(!(result1 && result2)){
         Log.info("Failed to set Json Data!! Tokens:");
     }
 
-   // Print all of the tokens to see if there are any cases where the string becomes unparsible
-   printTokens(jp, false);
+   	// Print all of the tokens to see if there are any cases where the string becomes unparsible
+   	printTokens(jp, false);
 
-   // TODO: print the raw string to see if the code is parsible, yet has a buildup of closing brackets that may cause issues elsewhere
-   
+	// Print the last 32 characters of the node string to see if there are any issues with JSON structure that could 
+	// cause a failure when converting to and from a string to an object.
+	const char* jsonString = nodeDatabase.get_nodeIDJson();
+	const char* last32Characters = jsonString + strlen(jsonString) - 32;
+	Log.info("Last 32 characters of node string: %s", last32Characters); 
     numLoops++;
 
 	if (saveNeeded && (millis() - lastSave > saveFrequency)) {

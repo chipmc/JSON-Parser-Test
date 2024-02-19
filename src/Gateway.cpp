@@ -39,7 +39,8 @@ buf[27] Re-Transmission Delay               // This byte is dedicated to RHRelia
 void Gateway::processDataReport(DataReport report) {
     
     report.getReportData(buf, sizeof(buf));
-    current.set_alertCodeNode(0);			// reset data report							
+    current.set_alertCodeNode(0);			// reset data report
+    current.set_nodeNumber(buf[2]);							
     current.set_token(buf[3] << 8 | buf[4]);									
     current.set_sensorType(buf[5]);												
     current.set_uniqueID(buf[6] << 24 | buf[7] << 16 | buf[8] << 8 | buf[9]);	
