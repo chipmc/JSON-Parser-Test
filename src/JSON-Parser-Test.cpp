@@ -223,8 +223,6 @@ void loop() {
 
     int currentIndex = numLoops % numberOfNodes;
 
-	int nodeNumber = currentIndex + 1;
-
     // Get the current time using Particle's Time.now()
     unsigned long currentTime = Time.now();
     // Seed a random number generator with the current time
@@ -262,7 +260,7 @@ void loop() {
     }
 
    	// Print all of the tokens to see if there are any cases where the string becomes unparsible
-   	printTokens(jp, false);
+   	printTokens(jp, true);
 
 	// Print the last 32 characters of the node string to see if there are any issues with JSON structure that could 
 	// cause a failure when converting to and from a string to an object.
@@ -271,12 +269,17 @@ void loop() {
 	Log.info("Last 32 characters of node string: %s", last32Characters); 
     numLoops++;
 
+	/*
+
 	if (saveNeeded && (millis() - lastSave > saveFrequency)) {
+		nodeDatabase.set_nodeIDJson(jp.getBuffer());									// This should backup the nodeID database - now updated to persistent storage
 		nodeDatabase.flush(false);
 		saveNeeded = false;
 		lastSave = millis();
 		Log.info("Saved the nodeDatabase");
 	}
+
+	*/
 }
 
 byte findNodeNumber(uint32_t uniqueID) {
@@ -357,34 +360,12 @@ bool setType(int nodeNumber, int newType) {
 	jp.getValueByKey(nodeObjectContainer, "type", type);
 
 	Log.info("Changing sensor type from %d to %d", type, newType);
-
-	const JsonParserGeneratorRK::jsmntok_t *value;
-
-	jp.getValueTokenByKey(nodeObjectContainer, "type", value);
-	mod.startModify(value);
-	mod.insertValue((int)newType);
-
-	jp.getValueTokenByKey(nodeObjectContainer, "p", value);
-	mod.startModify(value);
-	mod.insertValue((int)0);
-
-	jp.getValueTokenByKey(nodeObjectContainer, "p1", value);
-	mod.startModify(value);
-	mod.insertValue((int)0);
-
-	jp.getValueTokenByKey(nodeObjectContainer, "p2", value);
-	mod.startModify(value);
-	mod.insertValue((int)0);
-
-	jp.getValueTokenByKey(nodeObjectContainer, "pend", value);
-	mod.startModify(value);
-	mod.insertValue((int)0);
-
-	jp.getValueTokenByKey(nodeObjectContainer, "cont", value);
-	mod.startModify(value);
-	mod.insertValue((int)0);
-
-	mod.finish();
+	mod.insertOrUpdateKeyValue(nodeObjectContainer, "type",(int)newType);
+	mod.insertOrUpdateKeyValue(nodeObjectContainer, "p",(int)0);			// New type so we need to zero the values
+	mod.insertOrUpdateKeyValue(nodeObjectContainer, "p1",(int)0);
+	mod.insertOrUpdateKeyValue(nodeObjectContainer, "p2",(int)0);
+	mod.insertOrUpdateKeyValue(nodeObjectContainer, "pend",(int)0);
+	mod.insertOrUpdateKeyValue(nodeObjectContainer, "cont",(int)0);
 
 	saveNeeded = true;
 
@@ -443,11 +424,6 @@ int printNodeData(bool publish) {
 		jp.getValueByKey(nodeObjectContainer, "cont", pendingAlertContext);
 
 		parseJoinPayloadValues(sensorType, compressedJoinPayload, payload1, payload2, payload3, payload4);
-
-
-	//  ***************************  This could likely be simplified ***************************
-	//  ***************************  This could likely be simplified ***************************
-	//  ***************************  This could likely be simplified ***************************
 
 		// Type specific JSON variables
 		switch (sensorType) {
@@ -608,18 +584,8 @@ bool setJsonData1(int nodeNumber, int sensorType, int newJsonData1) {
 
 	Log.info("Updating jsonData1 value for node %d from %d to %d", nodeNumber, jsonData1, newJsonData1);
 
-	const JsonParserGeneratorRK::jsmntok_t *value;
-
-	jp.getValueTokenByKey(nodeObjectContainer, "p1", value);
-
-	JsonModifier mod(jp);
-
-	mod.startModify(value);
-	mod.insertValue((int)newJsonData1);
-	mod.finish();
-
-	nodeDatabase.set_nodeIDJson(jp.getBuffer());									// This should backup the nodeID database - now updated to persistent storage
-
+	JsonModifier mod(jp);											// Look at the examples here: https://github.com/rickkas7/JsonParserGeneratorRK/blob/master/test/JsonTest.cpp#L760
+	mod.insertOrUpdateKeyValue(nodeObjectContainer, "p1",(int)newJsonData1);
 	saveNeeded = true;
 
 	return true;
@@ -642,17 +608,8 @@ bool setJsonData2(int nodeNumber, int sensorType, int newJsonData2) {
 
 	Log.info("Updating jsonData2 value for node %d from %d to %d", nodeNumber, jsonData2, newJsonData2);
 
-	const JsonParserGeneratorRK::jsmntok_t *value;
-
-	jp.getValueTokenByKey(nodeObjectContainer, "p2", value);
-
 	JsonModifier mod(jp);
-
-	mod.startModify(value);
-	mod.insertValue((int)newJsonData2);
-	mod.finish();
-
-	nodeDatabase.set_nodeIDJson(jp.getBuffer());									// This should backup the nodeID database - now updated to persistent storage
+	mod.insertOrUpdateKeyValue(nodeObjectContainer, "p2", (int)newJsonData2);
 
 	saveNeeded = true;
 
