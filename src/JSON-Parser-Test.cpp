@@ -18,6 +18,7 @@ void printTokens(JsonParser &jp, bool verbose = false);
 void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok);
 bool setJsonData1(int nodeNumber, int sensorType, int newJsonData1);
 bool setJsonData2(int nodeNumber, int sensorType, int newJsonData2);
+const char* getJsonString(JsonParser &jp);
 
 bool saveNeeded = false;											// Use this to rate limit saves to the nodeDatabase
 unsigned long lastSave = 0;											// Use this to rate limit saves to the nodeDatabase
@@ -269,17 +270,15 @@ void loop() {
 	Log.info("Last 32 characters of node string: %s", last32Characters); 
     numLoops++;
 
-	/*
 
 	if (saveNeeded && (millis() - lastSave > saveFrequency)) {
-		nodeDatabase.set_nodeIDJson(jp.getBuffer());									// This should backup the nodeID database - now updated to persistent storage
+		nodeDatabase.set_nodeIDJson(getJsonString(jp));									// This should backup the nodeID database - now updated to persistent storage
 		nodeDatabase.flush(false);
 		saveNeeded = false;
 		lastSave = millis();
 		Log.info("Saved the nodeDatabase");
 	}
 
-	*/
 }
 
 byte findNodeNumber(uint32_t uniqueID) {
@@ -513,6 +512,28 @@ void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok) {
 		break;
 	}
 
+}
+
+const char* getJsonString(JsonParser &jp) {
+    // The first token is the outer object - here we get the total size of the object
+    JsonParserGeneratorRK::jsmntok_t *tok = jp.getTokens();
+    
+    // Allocate memory for tempBuf dynamically
+    char *tempBuf = (char*)malloc(tok->end - tok->start + 1);
+
+    // Check if memory allocation was successful
+    if (tempBuf != nullptr) {
+        // Copy the content to tempBuf
+        memcpy(tempBuf, jp.getBuffer() + tok->start, tok->end - tok->start);
+        
+        // Null-terminate the string
+        tempBuf[tok->end - tok->start] = '\0';
+
+        // Return the dynamically allocated string
+        return tempBuf;
+    } else {
+        return "Memory allocation failure!!";
+    }
 }
 
 bool parseJoinPayloadValues(uint8_t sensorType, uint8_t compressedJoinPayload, uint8_t& payload1, uint8_t& payload2, uint8_t& payload3, uint8_t& payload4) {
