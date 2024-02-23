@@ -18,7 +18,7 @@ void printTokens(JsonParser &jp, bool verbose = false);
 void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok);
 bool setJsonData1(int nodeNumber, int sensorType, int newJsonData1);
 bool setJsonData2(int nodeNumber, int sensorType, int newJsonData2);
-const char* getJsonString(JsonParser &jp);
+bool saveNodeDatabase(JsonParser &jp);
 
 bool saveNeeded = false;											// Use this to rate limit saves to the nodeDatabase
 unsigned long lastSave = 0;											// Use this to rate limit saves to the nodeDatabase
@@ -272,11 +272,10 @@ void loop() {
 
 
 	if (saveNeeded && (millis() - lastSave > saveFrequency)) {
-		nodeDatabase.set_nodeIDJson(getJsonString(jp));									// This should backup the nodeID database - now updated to persistent storage
-		nodeDatabase.flush(false);
+		saveNodeDatabase(jp);
 		saveNeeded = false;
 		lastSave = millis();
-		Log.info("Saved the nodeDatabase");
+		Log.info("Saved the nodeDatabase with free memory of %lu", System.freeMemory());  // As written, you can see this number decline
 	}
 
 }
@@ -514,7 +513,8 @@ void printToken(JsonParser &jp, const JsonParserGeneratorRK::jsmntok_t *tok) {
 
 }
 
-const char* getJsonString(JsonParser &jp) {
+
+bool saveNodeDatabase(JsonParser &jp) {
     // The first token is the outer object - here we get the total size of the object
     JsonParserGeneratorRK::jsmntok_t *tok = jp.getTokens();
     
@@ -529,10 +529,16 @@ const char* getJsonString(JsonParser &jp) {
         // Null-terminate the string
         tempBuf[tok->end - tok->start] = '\0';
 
-        // Return the dynamically allocated string
-        return tempBuf;
+        // Return the dynamically allocated string and save it
+
+		nodeDatabase.set_nodeIDJson(tempBuf);									// This should backup the nodeID database - now updated to persistent storage
+		nodeDatabase.flush(false);
+
+		free(tempBuf);															// Free the memory (good practice)
+        return true;
     } else {
         return "Memory allocation failure!!";
+		return false;
     }
 }
 
